@@ -56,7 +56,7 @@
 #define MAXBITS 256*8
 #define BITSTEP 24 /* 3bytes*8bits */
 
-__code uint16_t steps[86]={
+__code const uint16_t steps[86]={
 0, // n=0 bytes, no two bits are closer than 1 bits apart, total distance metric = 0 bits
 7, // n=3 bytes, no two bits are closer than 7 bits apart, total distance metric = 168 bits
 9, // n=6 bytes, no two bits are closer than 9 bits apart, total distance metric = 433 bits
@@ -145,21 +145,15 @@ __code uint16_t steps[86]={
 394 // n=255 bytes, no two bits are closer than 63 bits apart, total distance metric = 128521 bits
 };
 
-static uint8_t interleave_getbit(__pdata uint8_t n, __xdata uint8_t * __pdata in,
-				 __pdata uint8_t bit)
-{
-  return (in[((bit*steps[n/3])%n)>>3]
-	  >>(((bit*steps[n/3])%n)&7))?1:0;
-}
+// These are macros to save RAM, even though inline functions probably shouldn't
+// use RAM just by existing.
+#define interleave_getbit(n,in,bit) ((in[(((bit)*steps[n/3])%n)>>3]>>((((bit)*steps[n/3])%n)&7))?1:0)
 
-static void interleave_setbit(__pdata uint8_t n, __xdata uint8_t * __pdata in,
-			      __pdata uint8_t bit, __pdata uint8_t value)
-{
-  uint8_t byte=((bit*steps[n/3])%n)>>3;
-  bit=1<<(((bit*steps[n/3])%n)&7);
-  if (value==0) in[byte]&=~bit;
-  else in[byte]|=bit;
-}
+#define interleave_setbit(n,in,bit, value) \
+  { \
+    if ((value)==0) in[(((bit)*steps[n/3])%n)>>3]&=~1<<((((bit)*steps[n/3])%n)&7); \
+    else in[(((bit)*steps[n/3])%n)>>3]|=1<<((((bit)*steps[n/3])%n)&7); \
+  }
 
 uint8_t interleave_getbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
 			   __pdata uint8_t index)
@@ -177,7 +171,7 @@ uint8_t interleave_getbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
 }
 
 void interleave_setbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
-			__pdata uint8_t index, uint8_t __pdata value)
+			       __pdata uint8_t index, uint8_t __pdata value)
 {
   interleave_setbit(n,in,(index<<3)+0,(value>>0)&1);
   interleave_setbit(n,in,(index<<3)+1,(value>>1)&1);
