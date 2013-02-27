@@ -158,7 +158,7 @@ __code const uint16_t steps[86]={
 uint8_t interleave_getbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
 			   __pdata uint8_t index)
 {
-  uint8_t v=0;
+  register uint8_t v=0;
   v|=interleave_getbit(n,in,index*8+0);
   v|=interleave_getbit(n,in,index*8+1)<<1;
   v|=interleave_getbit(n,in,index*8+2)<<2;
