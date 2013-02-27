@@ -42,6 +42,15 @@
 #define __xdata
 #define uint8_t unsigned char
 #define uint16_t unsigned short
+#else
+#include <stdarg.h>
+#include <ctype.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <string.h>
 #endif
 
 #define MAXBITS 256*8
@@ -59,9 +68,10 @@ static uint8_t interleave_getbit(__pdata uint8_t n, __xdata uint8_t * __pdata in
 static void interleave_setbit(__pdata uint8_t n, __xdata uint8_t * __pdata in,
 			      __pdata uint8_t bit, __pdata uint8_t value)
 {
-  uint8_t byte=in[((bit*steps[n/3])%n)>>3];
+  uint8_t byte=((bit*steps[n/3])%n)>>3;
   bit=1<<(((bit*steps[n/3])%n)&7);
-  if (value) byte|=bit; else byte&=~bit;
+  if (value==0) in[byte]&=~bit;
+  else in[byte]|=bit;
 }
 
 uint8_t interleave_getbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
