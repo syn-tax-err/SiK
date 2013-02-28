@@ -33,7 +33,9 @@
 ///
 
 #include <stdarg.h>
+#ifndef INTERLEAVE_TEST
 #include "radio.h"
+#endif
 #include "golay23.h"
 
 // intermediate arrays for encodeing/decoding. Using these
@@ -97,10 +99,10 @@ golay_encode24(void)
 	g6[5] = (codeword >> 16) & 0xFF;
 }
 
-void interleave_setbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
-			__pdata uint8_t index, uint8_t __pdata value);
-uint8_t interleave_getbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
-			   __pdata uint8_t index);
+void interleave_setbyte(__pdata uint16_t n, __xdata uint8_t * __pdata in,
+			__pdata uint16_t index, uint8_t __pdata value);
+uint8_t interleave_getbyte(__pdata uint16_t n, __xdata uint8_t * __pdata in,
+			   __pdata uint16_t index);
 
 // encode n bytes of data into 2n coded bytes. n must be a multiple 3
 // encoding takes about 6 microseconds per input byte

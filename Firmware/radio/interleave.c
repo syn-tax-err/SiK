@@ -233,16 +233,17 @@ __code const uint16_t steps[172]={
 
 // These are macros to save RAM, even though inline functions probably shouldn't
 // use RAM just by existing.
-#define interleave_getbit(n,in,bit) ((in[(((bit)*steps[n/3])%n)>>3]>>((((bit)*steps[n/3])%n)&7))?1:0)
+#define bitnumber(n,bit) (((bit)*steps[n/3])%(n*8))
+#define interleave_getbit(n,in,bit) ((in[bitnumber(n,bit)>>3]>>(bitnumber(n,bit)&7))?1:0)
 
 #define interleave_setbit(n,in,bit, value) \
   { \
-    if ((value)==0) in[(((bit)*steps[n/3])%n)>>3]&=~1<<((((bit)*steps[n/3])%n)&7); \
-    else in[(((bit)*steps[n/3])%n)>>3]|=1<<((((bit)*steps[n/3])%n)&7); \
+  if ((value)==0) in[(bitnumber(n,bit))>>3]&=~1<<((bitnumber(n,bit))&7); \
+  else in[(bitnumber(n,bit))>>3]|=1<<((bitnumber(n,bit))&7);		\
   }
 
-uint8_t interleave_getbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
-			   __pdata uint8_t index)
+uint8_t interleave_getbyte(__pdata uint16_t n, __xdata uint8_t * __pdata in,
+			   __pdata uint16_t index)
 {
   register uint8_t v=0;
   v|=interleave_getbit(n,in,index*8+0);
@@ -256,9 +257,23 @@ uint8_t interleave_getbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
   return v;
 }
 
-void interleave_setbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
-			       __pdata uint8_t index, uint8_t __pdata value)
+void interleave_setbyte(__pdata uint16_t n, __xdata uint8_t * __pdata in,
+			       __pdata uint16_t index, uint8_t __pdata value)
 {
+#ifdef INTERLEAVE_TEST
+  printf("Encoding bits %d -- %d, n=%d,step=%d @ positions %d,%d,%d,%d,%d,%d,%d,%d\n",
+	 index<<3,(index<<3)+7,
+	 n,steps[n/3],
+	 bitnumber(n,(index<<3)+0),
+	 bitnumber(n,(index<<3)+1),
+	 bitnumber(n,(index<<3)+2),
+	 bitnumber(n,(index<<3)+3),
+	 bitnumber(n,(index<<3)+4),
+	 bitnumber(n,(index<<3)+5),
+	 bitnumber(n,(index<<3)+6),
+	 bitnumber(n,(index<<3)+7)
+	 );
+#endif
   interleave_setbit(n,in,(index<<3)+0,(value>>0)&1);
   interleave_setbit(n,in,(index<<3)+1,(value>>1)&1);
   interleave_setbit(n,in,(index<<3)+2,(value>>2)&1);
