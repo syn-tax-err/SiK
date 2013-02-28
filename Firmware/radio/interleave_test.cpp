@@ -97,8 +97,9 @@ int main()
   printf("  -- test passed\n");
 
   // Try interleaving and golay protecting a block of data
+  // 256 bytes of golay protected data = 128 bytes of raw data.
   printf("Testing interleaving at golay_{en,de}code() level.\n");
-  for(n=0;n<256;n+=3) {
+  for(n=0;n<128;n+=3) {
     prefill(in);
     interleave=1;
     golay_encode(n,in,out);
