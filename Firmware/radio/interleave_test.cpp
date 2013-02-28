@@ -14,10 +14,13 @@
 #define __xdata
 #define PARAM_ECC 1
 
+int interleave=1;
 int param_get(int param)
 {
   // ECC_PARAM returns "Golay + interlacing"
-  return 2;
+  if (interleave)
+    return 2;
+  else return 1;
 }
 
 #include "interleave.c"
@@ -93,10 +96,20 @@ int main()
   printf("  -- test passed\n");
 
   // Try interleaving and golay protecting a block of data
-  n=255;
-  prefill(in);
-  show("input",n,in);
-  golay_encode(n,in,out);
-  show("encoded output",n*2,out);
+  printf("Testing interleaving at golay_{en,de}code() level.\n");
+  for(n=0;n<256;n+=3) {
+    prefill(in);
+    interleave=1;
+    golay_encode(n,in,out);
+    int icount=countones(n*2,out);
+    interleave=0;
+    golay_encode(n,in,out);
+    int ncount=countones(n*2,out);
+    if (icount!=ncount) {
+      printf("Test failed: different number of set bits with/without"
+	     " interleaving: %d vs %d\n",icount,ncount);
+      exit(-1);
+    }
+  }
 
 }

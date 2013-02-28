@@ -107,12 +107,16 @@ extern __xdata uint16_t interleave_data_size;
 
 // encode n bytes of data into 2n coded bytes. n must be a multiple 3
 // encoding takes about 6 microseconds per input byte
+
+int show(char *m,int n, uint8_t *b);
+
 void 
-golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * __pdata out)
+golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in, 
+	     __xdata uint8_t * __pdata out)
 {
 	uint8_t i;
-	interleave_data_size=n;
-	for(i=0;i<n;i+=3) {
+	interleave_data_size=n*2;
+	for(i=0;i!=n;i+=3) {
 		g3[0] = in[i+0]; g3[1] = in[i+1]; g3[2] = in[i+2];
 		golay_encode24();
 		if (param_get(PARAM_ECC)==1) {

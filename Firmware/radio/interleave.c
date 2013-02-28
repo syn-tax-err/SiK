@@ -238,7 +238,7 @@ __code const uint16_t steps[172]={
 
 #define interleave_setbit(n,in,bit, value) \
   { \
-  if ((value)==0) in[(bitnumber(n,bit))>>3]&=~1<<((bitnumber(n,bit))&7); \
+    if ((value)==0) in[(bitnumber(n,bit))>>3]&=~(1<<((bitnumber(n,bit))&7)); \
   else in[(bitnumber(n,bit))>>3]|=1<<((bitnumber(n,bit))&7);		\
   }
 
