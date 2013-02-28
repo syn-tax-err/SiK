@@ -61,6 +61,7 @@ int main()
   int n;
   unsigned char in[256];
   unsigned char out[512];
+  unsigned char verify[256];
 
   printf("Testing interleaver at low level\n");
 
@@ -110,6 +111,15 @@ int main()
 	     " interleaving: %d vs %d\n",icount,ncount);
       exit(-1);
     }
+    bzero(verify,256);
+    golay_decode(n*2,out,verify);
+    if (bcmp(in,verify,n)) {
+      printf("Decode error for packet of %d bytes\n",n);
+      show("input",n,in);
+      show("verify error (should be 0x00 -- 0xnn)",n,verify);
+      exit(-1);
+    }
   }
-
+  printf("  -- test passed.\n");
+  return 0;
 }
