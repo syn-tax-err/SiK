@@ -42,30 +42,61 @@ int prefill(unsigned char *b)
   return 0;
 }
 
+int countones(int n,unsigned char *b)
+{
+  int j,i=0;
+  int count=0;
+  for(i=0;i<n;i++) {
+    for(j=0;j<8;j++)
+      if (b[i]&(1<<j)) count++;
+  }
+  return count;
+}
+
 int main()
 {
   int n;
   unsigned char in[256];
   unsigned char out[512];
 
-  printf("Testing interleaver\n");
+  printf("Testing interleaver at low level\n");
 
-  // Perform some diagnostics on the interleaver
-  bzero(out,512);
-  n=510;
-  printf("step=%d bits.\n",steps[n/3]);
-  int i;
-  for(i=0;i<510;i++) {
-    interleave_setbyte(n,out,i,0xff);
-    show("input",n,out);
+  for(n=6;n<=510;n+=6) {
+    // Perform some diagnostics on the interleaver
+    bzero(out,512);
+    interleave_data_size=n;
+    //    printf("step=%d bits.\n",steps[n/3]);
+    int i;
+    for(i=0;i<n;i++) {
+      interleave_setbyte(out,i,0xff);
+      int ones=countones(n,out);
+      if (ones!=((i+1)*8)) {
+	printf("Test failed for golay encoded packet size=%d\n",n);
+	printf("n=%d, i=%d\n",n,i);
+	show("bits clash with another byte",n,out);
+	int k,l;
+	for(k=0;k<(8*i);k++) 
+	  for(l=0;l<8;l++) 
+	    if (bitnumber(n,k)==bitnumber(n,i*8+l)) {
+	      printf("  byte %d.%d (bit=%d) clashes with bit %d of this byte"
+		     " @ bit %d\n",
+		     k/8,k&7,k,l,bitnumber(n,i*8+l));
+	      printf("them: bit*steps[n/3]%%(n*8) = %d*steps[%d]%%%d = %d\n",
+		     k,n/3,n*8,k*steps[n/3]%(n*8));
+	      printf("us: bit*steps[n/3]%%(n*8) = %d*steps[%d]%%%d = %d\n",
+		     i*8+l,n/3,n*8,(i*8+l)*steps[n/3]%(n*8));
+	    }	
+	exit(-1);
+      }
+    }
   }
-  
+  printf("  -- test passed\n");
 
   // Try interleaving and golay protecting a block of data
   n=255;
   prefill(in);
   show("input",n,in);
   golay_encode(n,in,out);
-  show("encoded output",n,out);
+  show("encoded output",n*2,out);
 
 }

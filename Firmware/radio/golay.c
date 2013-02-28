@@ -99,10 +99,11 @@ golay_encode24(void)
 	g6[5] = (codeword >> 16) & 0xFF;
 }
 
-void interleave_setbyte(__pdata uint16_t n, __xdata uint8_t * __pdata in,
+void interleave_setbyte(__xdata uint8_t * __pdata in,
 			__pdata uint16_t index, uint8_t __pdata value);
-uint8_t interleave_getbyte(__pdata uint16_t n, __xdata uint8_t * __pdata in,
+uint8_t interleave_getbyte(__xdata uint8_t * __pdata in,
 			   __pdata uint16_t index);
+extern __xdata uint16_t interleave_data_size;
 
 // encode n bytes of data into 2n coded bytes. n must be a multiple 3
 // encoding takes about 6 microseconds per input byte
@@ -110,6 +111,7 @@ void
 golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * __pdata out)
 {
 	uint8_t i;
+	interleave_data_size=n;
 	for(i=0;i<n;i+=3) {
 		g3[0] = in[i+0]; g3[1] = in[i+1]; g3[2] = in[i+2];
 		golay_encode24();
@@ -118,12 +120,12 @@ golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * 
 			out[i*2+0] = g6[0]; out[i*2+1] = g6[1]; out[i*2+2] = g6[2]; 
 			out[i*2+3] = g6[3]; out[i*2+4] = g6[4]; out[i*2+5] = g6[5]; 		 } else {
 			// Interleaved output to strengthen against burst errors
-			interleave_setbyte(n*2,out,i*2+0,g6[0]);
-			interleave_setbyte(n*2,out,i*2+1,g6[1]);
-			interleave_setbyte(n*2,out,i*2+2,g6[2]);
-			interleave_setbyte(n*2,out,i*2+3,g6[3]);
-			interleave_setbyte(n*2,out,i*2+4,g6[4]);
-			interleave_setbyte(n*2,out,i*2+5,g6[5]);
+			interleave_setbyte(out,i*2+0,g6[0]);
+			interleave_setbyte(out,i*2+1,g6[1]);
+			interleave_setbyte(out,i*2+2,g6[2]);
+			interleave_setbyte(out,i*2+3,g6[3]);
+			interleave_setbyte(out,i*2+4,g6[4]);
+			interleave_setbyte(out,i*2+5,g6[5]);
 		}
 	}
 }
@@ -173,18 +175,19 @@ golay_decode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * 
 {
 	__pdata uint8_t errcount = 0;
 	uint8_t i;
+	interleave_data_size=n;
 	for(i=0;i<n;i+=6) {
 		if (param_get(PARAM_ECC)==1) {
 			g6[0] = in[0]; g6[1] = in[1]; g6[2] = in[2];
 			g6[3] = in[3]; g6[4] = in[4]; g6[5] = in[5];
 			in += 6;
 		} else {
-			g6[0]= interleave_getbyte(n,in,i+0);
-			g6[1]= interleave_getbyte(n,in,i+1);
-			g6[2]= interleave_getbyte(n,in,i+2);
-			g6[3]= interleave_getbyte(n,in,i+3);
-			g6[4]= interleave_getbyte(n,in,i+4);
-			g6[5]= interleave_getbyte(n,in,i+5);
+			g6[0]= interleave_getbyte(in,i+0);
+			g6[1]= interleave_getbyte(in,i+1);
+			g6[2]= interleave_getbyte(in,i+2);
+			g6[3]= interleave_getbyte(in,i+3);
+			g6[4]= interleave_getbyte(in,i+4);
+			g6[5]= interleave_getbyte(in,i+5);
 		}
 		errcount += golay_decode24();
 		out[0] = g3[0]; out[1] = g3[1]; out[2] = g3[2];
