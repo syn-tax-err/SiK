@@ -108,6 +108,11 @@ param_check(__pdata enum ParamID id, __data uint32_t val)
 		break;
 
 	case PARAM_ECC:
+		// 1 = Golay
+		// 2 = Golay + interleaving
+		if (val > 2)
+			return false;
+		break;
 	case PARAM_MAVLINK:
 	case PARAM_OPPRESEND:
 		// boolean 0/1 only

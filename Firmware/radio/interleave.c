@@ -53,10 +53,11 @@
 #include <string.h>
 #endif
 
-#define MAXBITS 256*8
+#define MAXBITS 512*8
 #define BITSTEP 24 /* 3bytes*8bits */
 
-__code const uint16_t steps[86]={
+#ifndef STANDALONE
+__code const uint16_t steps[172]={
 0, // n=0 bytes, no two bits are closer than 1 bits apart, total distance metric = 0 bits
 7, // n=3 bytes, no two bits are closer than 7 bits apart, total distance metric = 168 bits
 9, // n=6 bytes, no two bits are closer than 9 bits apart, total distance metric = 433 bits
@@ -142,7 +143,92 @@ __code const uint16_t steps[86]={
 1047, // n=246 bytes, no two bits are closer than 62 bits apart, total distance metric = 122017 bits
 435, // n=249 bytes, no two bits are closer than 63 bits apart, total distance metric = 125496 bits
 1040, // n=252 bytes, no two bits are closer than 63 bits apart, total distance metric = 127009 bits
-394 // n=255 bytes, no two bits are closer than 63 bits apart, total distance metric = 128521 bits
+394, // n=255 bytes, no two bits are closer than 63 bits apart, total distance metric = 128521 bits
+439, // n=258 bytes, no two bits are closer than 63 bits apart, total distance metric = 130034 bits
+431, // n=261 bytes, no two bits are closer than 64 bits apart, total distance metric = 133633 bits
+65, // n=264 bytes, no two bits are closer than 65 bits apart, total distance metric = 137280 bits
+260, // n=267 bytes, no two bits are closer than 65 bits apart, total distance metric = 138840 bits
+130, // n=270 bytes, no two bits are closer than 65 bits apart, total distance metric = 140401 bits
+706, // n=273 bytes, no two bits are closer than 65 bits apart, total distance metric = 141962 bits
+68, // n=276 bytes, no two bits are closer than 65 bits apart, total distance metric = 143522 bits
+215, // n=279 bytes, no two bits are closer than 65 bits apart, total distance metric = 145082 bits
+343, // n=282 bytes, no two bits are closer than 67 bits apart, total distance metric = 151152 bits
+737, // n=285 bytes, no two bits are closer than 67 bits apart, total distance metric = 152761 bits
+338, // n=288 bytes, no two bits are closer than 67 bits apart, total distance metric = 154369 bits
+452, // n=291 bytes, no two bits are closer than 67 bits apart, total distance metric = 155978 bits
+1425, // n=294 bytes, no two bits are closer than 68 bits apart, total distance metric = 159937 bits
+143, // n=297 bytes, no two bits are closer than 68 bits apart, total distance metric = 161569 bits
+520, // n=300 bytes, no two bits are closer than 68 bits apart, total distance metric = 163201 bits
+589, // n=303 bytes, no two bits are closer than 69 bits apart, total distance metric = 167257 bits
+69, // n=306 bytes, no two bits are closer than 69 bits apart, total distance metric = 168913 bits
+211, // n=309 bytes, no two bits are closer than 69 bits apart, total distance metric = 170570 bits
+1735, // n=312 bytes, no two bits are closer than 70 bits apart, total distance metric = 174721 bits
+71, // n=315 bytes, no two bits are closer than 71 bits apart, total distance metric = 178920 bits
+717, // n=318 bytes, no two bits are closer than 71 bits apart, total distance metric = 180624 bits
+487, // n=321 bytes, no two bits are closer than 70 bits apart, total distance metric = 179763 bits
+888, // n=324 bytes, no two bits are closer than 71 bits apart, total distance metric = 184034 bits
+282, // n=327 bytes, no two bits are closer than 71 bits apart, total distance metric = 185738 bits
+572, // n=330 bytes, no two bits are closer than 72 bits apart, total distance metric = 190081 bits
+73, // n=333 bytes, no two bits are closer than 73 bits apart, total distance metric = 194472 bits
+219, // n=336 bytes, no two bits are closer than 73 bits apart, total distance metric = 196224 bits
+219, // n=339 bytes, no two bits are closer than 73 bits apart, total distance metric = 197977 bits
+73, // n=342 bytes, no two bits are closer than 73 bits apart, total distance metric = 199729 bits
+596, // n=345 bytes, no two bits are closer than 73 bits apart, total distance metric = 201482 bits
+514, // n=348 bytes, no two bits are closer than 74 bits apart, total distance metric = 206017 bits
+1283, // n=351 bytes, no two bits are closer than 74 bits apart, total distance metric = 207793 bits
+537, // n=354 bytes, no two bits are closer than 75 bits apart, total distance metric = 212400 bits
+587, // n=357 bytes, no two bits are closer than 75 bits apart, total distance metric = 214201 bits
+833, // n=360 bytes, no two bits are closer than 75 bits apart, total distance metric = 216001 bits
+156, // n=363 bytes, no two bits are closer than 75 bits apart, total distance metric = 217802 bits
+752, // n=366 bytes, no two bits are closer than 76 bits apart, total distance metric = 222529 bits
+398, // n=369 bytes, no two bits are closer than 76 bits apart, total distance metric = 224353 bits
+580, // n=372 bytes, no two bits are closer than 77 bits apart, total distance metric = 229152 bits
+80, // n=375 bytes, no two bits are closer than 77 bits apart, total distance metric = 231000 bits
+397, // n=378 bytes, no two bits are closer than 77 bits apart, total distance metric = 232849 bits
+687, // n=381 bytes, no two bits are closer than 77 bits apart, total distance metric = 234698 bits
+393, // n=384 bytes, no two bits are closer than 77 bits apart, total distance metric = 236546 bits
+1351, // n=387 bytes, no two bits are closer than 78 bits apart, total distance metric = 241489 bits
+79, // n=390 bytes, no two bits are closer than 79 bits apart, total distance metric = 246480 bits
+438, // n=393 bytes, no two bits are closer than 79 bits apart, total distance metric = 248376 bits
+324, // n=396 bytes, no two bits are closer than 79 bits apart, total distance metric = 250273 bits
+251, // n=399 bytes, no two bits are closer than 79 bits apart, total distance metric = 252169 bits
+562, // n=402 bytes, no two bits are closer than 79 bits apart, total distance metric = 254066 bits
+1661, // n=405 bytes, no two bits are closer than 80 bits apart, total distance metric = 259201 bits
+1171, // n=408 bytes, no two bits are closer than 80 bits apart, total distance metric = 261121 bits
+721, // n=411 bytes, no two bits are closer than 81 bits apart, total distance metric = 266328 bits
+405, // n=414 bytes, no two bits are closer than 81 bits apart, total distance metric = 268272 bits
+1871, // n=417 bytes, no two bits are closer than 81 bits apart, total distance metric = 270217 bits
+81, // n=420 bytes, no two bits are closer than 81 bits apart, total distance metric = 272161 bits
+1322, // n=423 bytes, no two bits are closer than 81 bits apart, total distance metric = 274106 bits
+873, // n=426 bytes, no two bits are closer than 82 bits apart, total distance metric = 279457 bits
+351, // n=429 bytes, no two bits are closer than 82 bits apart, total distance metric = 281425 bits
+708, // n=432 bytes, no two bits are closer than 83 bits apart, total distance metric = 286848 bits
+848, // n=435 bytes, no two bits are closer than 83 bits apart, total distance metric = 288840 bits
+327, // n=438 bytes, no two bits are closer than 83 bits apart, total distance metric = 290833 bits
+1204, // n=441 bytes, no two bits are closer than 83 bits apart, total distance metric = 292826 bits
+422, // n=444 bytes, no two bits are closer than 83 bits apart, total distance metric = 294818 bits
+2661, // n=447 bytes, no two bits are closer than 84 bits apart, total distance metric = 300385 bits
+669, // n=450 bytes, no two bits are closer than 84 bits apart, total distance metric = 302401 bits
+844, // n=453 bytes, no two bits are closer than 85 bits apart, total distance metric = 308040 bits
+595, // n=456 bytes, no two bits are closer than 85 bits apart, total distance metric = 310080 bits
+1062, // n=459 bytes, no two bits are closer than 85 bits apart, total distance metric = 312121 bits
+85, // n=462 bytes, no two bits are closer than 85 bits apart, total distance metric = 314161 bits
+2422, // n=465 bytes, no two bits are closer than 85 bits apart, total distance metric = 316202 bits
+767, // n=468 bytes, no two bits are closer than 86 bits apart, total distance metric = 321985 bits
+482, // n=471 bytes, no two bits are closer than 86 bits apart, total distance metric = 324049 bits
+432, // n=474 bytes, no two bits are closer than 87 bits apart, total distance metric = 329904 bits
+414, // n=477 bytes, no two bits are closer than 87 bits apart, total distance metric = 331992 bits
+537, // n=480 bytes, no two bits are closer than 87 bits apart, total distance metric = 334081 bits
+1527, // n=483 bytes, no two bits are closer than 87 bits apart, total distance metric = 336169 bits
+568, // n=486 bytes, no two bits are closer than 87 bits apart, total distance metric = 338258 bits
+1335, // n=489 bytes, no two bits are closer than 87 bits apart, total distance metric = 340346 bits
+349, // n=492 bytes, no two bits are closer than 88 bits apart, total distance metric = 346369 bits
+89, // n=495 bytes, no two bits are closer than 89 bits apart, total distance metric = 352440 bits
+582, // n=498 bytes, no two bits are closer than 89 bits apart, total distance metric = 354576 bits
+819, // n=501 bytes, no two bits are closer than 89 bits apart, total distance metric = 356713 bits
+716, // n=504 bytes, no two bits are closer than 89 bits apart, total distance metric = 358849 bits
+460, // n=507 bytes, no two bits are closer than 89 bits apart, total distance metric = 360986 bits
+622 // n=510 bytes, no two bits are closer than 89 bits apart, total distance metric = 363122 bits
 };
 
 // These are macros to save RAM, even though inline functions probably shouldn't
@@ -183,7 +269,7 @@ void interleave_setbyte(__pdata uint8_t n, __xdata uint8_t * __pdata in,
   interleave_setbit(n,in,(index<<3)+7,(value>>7)&1);
 }
 
-#ifdef STANDALONE
+#else
 
 int prefill(int *b)
 {
