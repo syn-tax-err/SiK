@@ -2,6 +2,7 @@
 //
 // Copyright (c) 2011 Michael Smith, All Rights Reserved
 // Copyright (c) 2011 Andrew Tridgell, All Rights Reserved
+// Copyright (c) 2013 Paul Gardner-Stephen, All Rights Reserved
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -38,7 +39,7 @@
 __xdata uint8_t radio_buffer[MAX_PACKET_LENGTH];
 // We need this now because the interleaving golay handling can no longer
 // be done in place.
-__xdata uint8_t radio_decode_buffer[MAX_PACKET_LENGTH];
+__xdata uint8_t radio_interleave_buffer[MAX_PACKET_LENGTH];
 __pdata uint8_t receive_packet_length;
 __pdata uint8_t partial_packet_length;
 __pdata uint8_t last_rssi;
@@ -116,7 +117,7 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 	// the headers separate -- which means we can properly protect the headers
 	// instead of having all the header bits in the first part of the packet,
 	// and thus no better protected than if we had no interleaving.
-	memcpy(radio_decode_buffer, radio_buffer, receive_packet_length);
+	memcpy(radio_interleave_buffer, radio_buffer, receive_packet_length);
 
 	// enable the receiver for the next packet. This also
 	// enables the EX0 interrupt
@@ -133,7 +134,7 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 	// decode the entire packet (necessary due to interleaving,
 	// even though we might waste some processor power decoding
 	// packets that are not for us).
-	errcount = golay_decode(elen,radio_decode_buffer,buf);
+	errcount = golay_decode(elen,radio_interleave_buffer,buf);
 
 	// Check netid
 	if (buf[0] != netid[0] ||
@@ -158,7 +159,7 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 	*length = buf[3+2];
 	
 	// Copy buffer down over headers ready for calculating CRC
-       	memcpy(radio_decode_buffer,&buf[6],*length);
+       	memcpy(radio_interleave_buffer,&buf[6],*length);
        
 	crc2 = crc16(*length, buf);
 	
