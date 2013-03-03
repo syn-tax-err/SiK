@@ -36,6 +36,9 @@
 #include "crc.h"
 
 __xdata uint8_t radio_buffer[MAX_PACKET_LENGTH];
+// We need this now because the interleaving golay handling can no longer
+// be done in place.
+__xdata uint8_t radio_decode_buffer[MAX_PACKET_LENGTH];
 __pdata uint8_t receive_packet_length;
 __pdata uint8_t partial_packet_length;
 __pdata uint8_t last_rssi;
@@ -76,7 +79,6 @@ static void	clear_status_registers(void);
 bool
 radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 {
-	__xdata uint8_t gout[3];
 	__data uint16_t crc1, crc2;
 	__data uint8_t errcount = 0;
 	__data uint8_t elen;
@@ -106,10 +108,15 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 		return true;
 	}
 
-	// decode it in the callers buffer. This relies on the
-	// in-place decode properties of the golay code. Decoding in
-	// this way allows us to overlap decoding with the next receive
-	memcpy(buf, radio_buffer, receive_packet_length);
+	// Previously we decoded in the caller's buffer, so that the next
+	// packet could be received while we process this one.
+	// However, interleaving the FEC means that we can no longer do this.
+	// so we have a special receive buffer for this now.  This also allows
+	// us to golay protect the entire packet in one piece, instead of with
+	// the headers separate -- which means we can properly protect the headers
+	// instead of having all the header bits in the first part of the packet,
+	// and thus no better protected than if we had no interleaving.
+	memcpy(radio_decode_buffer, radio_buffer, receive_packet_length);
 
 	// enable the receiver for the next packet. This also
 	// enables the EX0 interrupt
@@ -118,47 +125,50 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 
 	if (elen < 12 || (elen%6) != 0) {
 		// not a valid length
-		debug("rx len invalid %u\n", (unsigned)elen);
+		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>1))
+			printf("rx len invalid %u\n", (unsigned)elen);
+		goto failed;
+	}
+	
+	// decode the entire packet (necessary due to interleaving,
+	// even though we might waste some processor power decoding
+	// packets that are not for us).
+	errcount = golay_decode(elen,radio_decode_buffer,buf);
+
+	// Check netid
+	if (buf[0] != netid[0] ||
+	    buf[1] != netid[1]) {
+		// its not for our network ID 		
+		debug("netid %x %x is not us.\n",
+		      (unsigned)gout[0],
+		      (unsigned)gout[1]);
 		goto failed;
 	}
 
-	// decode the header
-	errcount = golay_decode(6, buf, gout);
-	if (gout[0] != netid[0] ||
-	    gout[1] != netid[1]) {
-		// its not for our network ID 
-		debug("netid %x %x\n",
-		       (unsigned)gout[0],
-		       (unsigned)gout[1]);
-		goto failed;
-	}
-
-	if (6*((gout[2]+2)/3+2) != elen) {
+	if (6*((buf[2]+2)/3+2) != elen) {
 		debug("rx len mismatch1 %u %u\n",
-		       (unsigned)gout[2],
-		       (unsigned)elen);		
+		      (unsigned)gout[2],
+		      (unsigned)elen);	
 		goto failed;
 	}
 
-	// decode the CRC
-	errcount += golay_decode(6, &buf[6], gout);
-	crc1 = gout[0] | (((uint16_t)gout[1])<<8);
+	// extract the sender CRC
+	crc1 = buf[3+0] | (((uint16_t)buf[3+1])<<8);
 
-	if (elen != 12) {
-		errcount += golay_decode(elen-12, &buf[12], buf);
-	}
-
-	*length = gout[2];
-
+	*length = buf[3+2];
+	
+	// Copy buffer down over headers ready for calculating CRC
+       	memcpy(radio_decode_buffer,&buf[6],*length);
+       
 	crc2 = crc16(*length, buf);
-
+	
 	if (crc1 != crc2) {
 		debug("crc1=%x crc2=%x len=%u [%x %x]\n",
-		       (unsigned)crc1, 
-		       (unsigned)crc2, 
-		       (unsigned)*length,
-		       (unsigned)buf[0],
-		       (unsigned)buf[1]);
+		      (unsigned)crc1, 
+		      (unsigned)crc2, 
+		      (unsigned)*length,
+		      (unsigned)buf[0],
+		      (unsigned)buf[1]);
 		goto failed;
 	}
 

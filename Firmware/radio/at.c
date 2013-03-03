@@ -407,6 +407,9 @@ at_ampersand(void)
 		} else if (!strcmp(at_cmd + 4, "=TDM")) {
 			// display TDM debug
 			at_testmode ^= AT_TEST_TDM;
+		} else if (!strcmp(at_cmd + 4, "=FEC")) {
+			// display FEC debug
+			at_testmode ^= AT_TEST_FEC;
 		} else {
 			at_error();
 		}
