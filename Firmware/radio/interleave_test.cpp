@@ -92,6 +92,8 @@ int main()
   unsigned char out[512];
   unsigned char verify[256];
 
+  int v,e,o,b;
+
   printf("Testing interleaver at low level\n");
 
   for(n=6;n<=510;n+=6) {
@@ -188,7 +190,7 @@ int main()
   // Try interleaving and golay protecting a block of data
   // But this time, introduce errors
   printf("Testing interleaving at golay_{en,de}code() level with burst errors.\n");
-  int e,o,j;
+  int j;
   for(n=126;n>0;n-=3) {
     // Wiping out upto 1/4 of the bytes should not prevent reception
     for(e=0;e<(n*2/4)-1;e++) 
@@ -259,7 +261,40 @@ int main()
 	  }
       }
   }
-  printf("  -- test passed.\n");
+  printf("\n  -- test passed.\n");
+
+  // Make sure it can recover from upto 3 bits wrong.
+  // For computational efficiency, we will only consider
+  // burst errors
+  printf("Testing golay coder at low level\n");
+  for(v=0;v!=0x1000000;v++) {
+    if (!(v&0xffff)) { printf("."); fflush(stdout); }
+    for(e=0;e<4;e++)
+      for(o=0;o<=(11-e);o++)
+	{
+	  //	  printf("v=%d, e=%d, o=%d\n",v,e,o);
+	  g3[0]=v>>16;
+	  g3[1]=v>>8;
+	  g3[2]=v>>0;
+	  golay_encode24();
+	  // Flip bits to simulate errors
+	  for(b=0;b<e;b++) g6[(o+b)/8]^=1<<(o+b)&7;
+	  // Now try to decode
+	  int errcount=golay_decode24();
+	  if ((g3[0]!=((v>>16)&0xff))
+	      ||(g3[1]!=((v>>8)&0xff))
+	      ||(g3[2]!=((v>>0)&0xff))
+	      ) {
+	    printf("Bytes being protected = 0x%06x, applying %d bit errors at offset %d\n",
+		   v,e,o);
+	    printf("detected %d errors, when there were really %d\n",errcount,e);
+	    printf("Decoded data as 0x%02x%02x%02x\n",g3[0],g3[1],g3[2]);
+	    exit(-1);
+	  }
+	}
+  }
+  printf("\n  -- test passed.\n");
+
     
   return 0;
 }
