@@ -161,10 +161,10 @@ int main()
 	for(o=(2*n)-e-1;o>=0;o--)
 	  {
 	    prefill(in);
-	    interleave=1;
+	    interleave=0;
 	    golay_encode(n,in,out);
 	    int icount=countones(n*2,out);
-	    interleave=0;
+	    interleave=1;
 	    golay_encode(n,in,out);
 	    int ncount=countones(n*2,out);
 	    if (icount!=ncount) {
