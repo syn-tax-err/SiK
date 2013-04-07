@@ -234,7 +234,7 @@ __code const uint16_t steps[172]={
 // These are macros to save RAM, even though inline functions probably shouldn't
 // use RAM just by existing.
 #define bitnumber(n,bit) (((bit)*steps[n/3])%(n*8))
-#define interleave_getbit(n,in,bit) ((in[bitnumber(n,bit)>>3]>>(bitnumber(n,bit)&7))?1:0)
+#define interleave_getbit(n,in,bit) (((in[bitnumber(n,bit)>>3]>>(bitnumber(n,bit)&7))&1)?1:0)
 
 #define interleave_setbit(n,in,bit, value) \
   { \
