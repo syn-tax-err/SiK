@@ -231,15 +231,28 @@ __code const uint16_t steps[172]={
 869, // n=510 bytes, no two bits are closer than 88 bits apart, total distance metric = 358954 bits
 };
 
-// These are macros to save RAM, even though inline functions probably shouldn't
-// use RAM just by existing.
+// The following are defined as macros to save RAM on the 8051 target, even though
+// inline functions probably shouldn't consume RAM just by existing.
+
+// We can use the pre-calculated optimised stepping patterns
 #define bitnumber(n,bit) (((bit)*steps[n/3])%(n*8))
+// ... or just spread bits evenly throughout space
+//#define bitnumber(n,bit) (((bit)/48)+(n/6)*((bit)%48))
+// It turns out that the optimised stepping patterns are MUCH better than evenly
+// spreading the bits out through the encoded block.
+// The optimal patterns allow for maximum burst errors of 11.6% on average (2.8 bits out of every 24), and upto 16.7% for some block lengths, i.e., ~4 out of every 24
+// bits.
+// In contrast, the even spreading can only do 7.2%, which is less than the 12.5%
+// (3 bits in every 24) that it should be able to do.
+// It is a mystery why both perform worse on average.  For now we will use the
+// optimised stepping values.
+
 #define interleave_getbit(n,in,bit) (((in[bitnumber(n,bit)>>3]>>(bitnumber(n,bit)&7))&1)?1:0)
 
 #define interleave_setbit(n,in,bit, value) \
   { \
     if ((value)==0) in[(bitnumber(n,bit))>>3]&=~(1<<((bitnumber(n,bit))&7)); \
-  else in[(bitnumber(n,bit))>>3]|=1<<((bitnumber(n,bit))&7);		\
+    else            in[(bitnumber(n,bit))>>3]|=  1<<((bitnumber(n,bit))&7);    \
   }
 
 __xdata uint16_t interleave_data_size;
