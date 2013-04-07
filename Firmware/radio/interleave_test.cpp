@@ -58,8 +58,9 @@ int countones(int n,unsigned char *b)
 
 int showbitpattern(int n,int byte_low,int byte_high,int burst_low,int burst_high)
 {
-  printf("Interleaved bit pattern:\n");
+  printf("Interleaved bit pattern: (n=%d, range=[%d,%d)\n",n,byte_low,byte_high);
   int i,j;
+  int count=0;
   for(i=byte_low*8;i<byte_high*8;i+=8)
     {
       int affected=0;
@@ -77,8 +78,10 @@ int showbitpattern(int n,int byte_low,int byte_high,int burst_low,int burst_high
 	    printf("b7=0x%02x.%d ",b/8,b&7);
 	  }
 	printf("\n");
+	count++;
       }
     }
+  if (!count) printf("  no blocks were affected by the burst error.\n");
   return 0;
 }
 
@@ -127,10 +130,10 @@ int main()
   printf("Testing interleaving at golay_{en,de}code() level.\n");
   for(n=0;n<128;n+=3) {
     prefill(in);
-    interleave=1;
+    interleave=0;
     golay_encode(n,in,out);
     int icount=countones(n*2,out);
-    interleave=0;
+    interleave=1;
     golay_encode(n,in,out);
     int ncount=countones(n*2,out);
     if (icount!=ncount) {
@@ -139,8 +142,8 @@ int main()
       exit(-1);
     }
     bzero(verify,256);
-    golay_decode(n*2,out,verify);
-    if (bcmp(in,verify,n)) {
+    int errcount=golay_decode(n*2,out,verify);
+    if (bcmp(in,verify,n)||errcount) {
       printf("Decode error for packet of %d bytes\n",n);
       show("input",n,in);
       show("verify error (should be 0x00 -- 0xnn)",n,verify);
@@ -156,7 +159,7 @@ int main()
   int e,o,j;
   for(n=126;n>0;n-=3) {
     // Wiping out upto 1/4 of the bytes should not prevent reception
-    for(e=1;e<(n*2/4)-1;e++) 
+    for(e=0;e<(n*2/4)-1;e++) 
       {
 	for(o=(2*n)-e-1;o>=0;o--)
 	  {
@@ -178,22 +181,30 @@ int main()
 	    // Verify that it still decodes properly
 	    bzero(verify,256);
 	    int errcount=golay_decode(n*2,out,verify);
-	    if (bcmp(in,verify,n)) {
-	      printf("Decode error for packet of %d bytes, with burst error from 0x%02x..0x%02x bytes inclusive\n",n,o,o+e-1);
-	      printf("  golat_decode() noticed %d errors.\n",errcount);
+	    if (bcmp(in,verify,n)||errcount) {
+	      if (e>0)
+		printf("Decode error for packet of %d bytes, with burst error from 0x%02x..0x%02x bytes inclusive\n",n,o,o+e-1);
+	      else
+		printf("Decode error for packet of %d bytes, with zero length burst error.\n",n);
+	      printf("  golay_decode() noticed %d errors.\n",errcount);
 	      show("input",n,in);
 	      show("verify error (should be 0x00 -- 0xnn)",n,verify);
 	      showbitpattern(n*2,0,n*2,o*8,(o+e-1)*8+7);
 
 	      /* Show how the code words have been affected */
 	      unsigned char out2[512];
-	      int k;
+	      int k,count=0;
 	      golay_encode(n,in,out2);
 	      for(k=0;k<n*2;k+=6) {
 		int m;
-		int show=0;
+		int show=0;		
 		for(m=0;m<6;m++) if (interleave_getbyte(out2,k+m)!=interleave_getbyte(out,k+m)) show=1;
+		for(m=0;m<6;m++) g6[m]=interleave_getbyte(out,k+m);
+		if (golay_decode24()) show=1;
+		for(m=0;m<6;m++) g6[m]=interleave_getbyte(out2,k+m);
+		if (golay_decode24()) show=1;
 		if (show) {
+		  count++;
 		  printf("Golay block #%2d (without burst error) : ",k/6);
 		  for(m=0;m<6;m++) printf("%02x",interleave_getbyte(out2,k+m));
 		  printf("\n                   (with burst error) : ",k/6);
@@ -203,9 +214,9 @@ int main()
 		  printf("  golay error count (with burst error) = %d\n",golay_decode24());
 		  for(m=0;m<6;m++) g6[m]=interleave_getbyte(out2,k+m);
 		  printf("  golay error count (without burst error) = %d\n",golay_decode24());
-
 		}
 	      }
+	      if (!count) printf("  no golay blocks were affected by the burst error.\n");
 
 	      exit(-1);
 	    } else printf(".");
