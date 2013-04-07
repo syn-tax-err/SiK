@@ -75,7 +75,7 @@ int showbitpattern(int n,int byte_low,int byte_high,int burst_low,int burst_high
 	for(j=i+7;j>=i;j--)
 	  {
 	    int b=bitnumber(n,j);
-	    printf("b7=0x%02x.%d ",b/8,b&7);
+	    printf("b%d=0x%02x.%d ",j-i,b/8,b&7);
 	  }
 	printf("\n");
 	count++;
@@ -103,6 +103,25 @@ int main()
     //    printf("step=%d bits.\n",steps[n/3]);
     int i;
     for(i=0;i<n;i++) {
+      interleave_setbyte(out,i,0x55);
+      int r=interleave_getbyte(out,i);
+      if (r!=0x55)
+	{
+	  printf("wrote 0x55 to byte %d of block with length = %d, but it read back as 0x%02x\n",
+		 i,n,r);
+	  show("encoded block",n,out);	  
+	  exit(-1);
+	}
+      interleave_setbyte(out,i,0xaa);
+      r=interleave_getbyte(out,i);
+      if (r!=0xaa)
+	{
+	  printf("wrote 0xaa to byte %d of block with length = %d, but it read back as 0x%02x\n",
+		 i,n,r);
+	  show("encoded block",n,out);	  
+	  exit(-1);
+	}
+
       interleave_setbyte(out,i,0xff);
       int ones=countones(n,out);
       if (ones!=((i+1)*8)) {
@@ -121,6 +140,13 @@ int main()
 	      printf("us: bit*steps[n/3]%%(n*8) = %d*steps[%d]%%%d = %d\n",
 		     i*8+l,n/3,n*8,(i*8+l)*steps[n/3]%(n*8));
 	    }
+	for(k=0;k<8*n;k++) {
+	  printf("   bit #%3d -> bit %d\n",k,bitnumber(n,k));
+	  int l;
+	  for(l=0;l<k;l++)
+	    if (bitnumber(n,l)==bitnumber(n,k)) printf("  which is the same as for bit #%d\n",l);
+	}
+
 	exit(-1);
       }
       int j;
@@ -145,7 +171,7 @@ int main()
     }
     printf("."); fflush(stdout);
   }
-  printf("  -- test passed\n");
+  printf("\n  -- test passed\n");
 
   // Try interleaving and golay protecting a block of data
   // 256 bytes of golay protected data = 128 bytes of raw data.
@@ -192,8 +218,11 @@ int main()
   printf("Testing interleaving at golay_{en,de}code() level with burst errors.\n");
   int j;
   for(n=126;n>0;n-=3) {
-    // Wiping out upto 1/4 of the bytes should not prevent reception
-    for(e=0;e<(n*2/4)-1;e++) 
+    // Wiping out upto 3 in every 24 encoded bits should not prevent reception
+    printf("  testing n=%d bytes (%d bytes encoded), theoretically burst errors to %d bits.\n",
+	   n,n*2,(n>>3)*8);
+    float bestpercent=100;
+    for(e=0;e<=n;e++) 
       {
 	for(o=(2*n)-e-1;o>=0;o--)
 	  {
@@ -210,56 +239,63 @@ int main()
 	      exit(-1);
 	    }
 	    // introduce the burst error
-	    for(j=o;j<o+e;j++) out[j]=0;
+	    for(j=o;j<o+e;j++) out[j]^=0xff;
 
 	    // Verify that it still decodes properly
 	    bzero(verify,256);
 	    int errcount=golay_decode(n*2,out,verify);
 	    if (bcmp(in,verify,n)) {
-	      if (e>0)
-		printf("Decode error for packet of %d bytes, with burst error from 0x%02x..0x%02x bytes inclusive (%2f%% of length)\n",n,o,o+e-1,
-		       e*50.0/n);
-	      else
-		printf("Decode error for packet of %d bytes, with zero length burst error.\n",n);
-	      printf("  golay_decode() noticed %d errors.\n",errcount);
-	      show("input",n,in);
-	      show("verify error (should be 0x00 -- 0xnn)",n,verify);
-	      unsigned char out2[512];
-	      int k,count=0;
-	      for(k=0;k<n;k++) out2[k]=in[k]^verify[k];
-	      show("Differences",n,out2);
-	      
-	      showbitpattern(n*2,0,n*2,o*8,(o+e-1)*8+7);
-
-	      /* Show how the code words have been affected */
-	      golay_encode(n,in,out2);
-	      for(k=0;k<n*2;k+=6) {
-		int m;
-		int show=0;		
-		for(m=0;m<6;m++) if (interleave_getbyte(out2,k+m)!=interleave_getbyte(out,k+m)) show=1;
-		for(m=0;m<6;m++) g6[m]=interleave_getbyte(out,k+m);
-		if (golay_decode24()) show=1;
-		for(m=0;m<6;m++) g6[m]=interleave_getbyte(out2,k+m);
-		if (golay_decode24()) show=1;
-		if (show) {
-		  count++;
-		  printf("Golay block #%2d (without burst error) : ",k/6);
-		  for(m=0;m<6;m++) printf("%02x",interleave_getbyte(out2,k+m));
-		  printf("\n                   (with burst error) : ",k/6);
-		  for(m=0;m<6;m++) printf("%02x",interleave_getbyte(out,k+m));
-		  printf("\n");
+	      if (e>(n>>3)) {
+		float percent=e*50.0/n;
+		if (percent<bestpercent) bestpercent=percent;
+	      } else {
+		if (e>0)
+		  printf("Decode error for packet of %d bytes, with burst error from 0x%02x..0x%02x bytes inclusive (%d bits = %2.1f%% of length)\n",n,o,o+e-1,
+			 e*8,e*50.0/n);
+		else
+		  printf("Decode error for packet of %d bytes, with zero length burst error.\n",n);
+		printf("  golay_decode() noticed %d errors.\n",errcount);
+		show("input",n,in);
+		show("verify error (should be 0x00 -- 0xnn)",n,verify);
+		unsigned char out2[512];
+		int k,count=0;
+		for(k=0;k<n;k++) out2[k]=in[k]^verify[k];
+		show("Differences",n,out2);
+		
+		showbitpattern(n*2,0,n*2,o*8,(o+e-1)*8+7);
+		
+		/* Show how the code words have been affected */
+		golay_encode(n,in,out2);
+		for(k=0;k<n*2;k+=6) {
+		  int m;
+		  int show=0;		
+		  for(m=0;m<6;m++) if (interleave_getbyte(out2,k+m)!=interleave_getbyte(out,k+m)) show=1;
 		  for(m=0;m<6;m++) g6[m]=interleave_getbyte(out,k+m);
-		  printf("  golay error count (with burst error) = %d\n",golay_decode24());
+		  if (golay_decode24()) show=1;
 		  for(m=0;m<6;m++) g6[m]=interleave_getbyte(out2,k+m);
-		  printf("  golay error count (without burst error) = %d\n",golay_decode24());
+		  if (golay_decode24()) show=1;
+		  if (show) {
+		    count++;
+		    printf("Golay block #%2d (without burst error) : ",k/6);
+		    for(m=0;m<6;m++) printf("%02x",interleave_getbyte(out2,k+m));
+		    printf("\n                   (with burst error) : ",k/6);
+		    for(m=0;m<6;m++) printf("%02x",interleave_getbyte(out,k+m));
+		    printf("\n");
+		    for(m=0;m<6;m++) g6[m]=interleave_getbyte(out,k+m);
+		    printf("  golay error count (with burst error) = %d\n",golay_decode24());
+		    for(m=0;m<6;m++) g6[m]=interleave_getbyte(out2,k+m);
+		    printf("  golay error count (without burst error) = %d\n",golay_decode24());
+		  }
 		}
-	      }
-	      if (!count) printf("  no golay blocks were affected by the burst error.\n");
-
-	      exit(-1);
-	    } else printf(".");
+		if (!count) printf("  no golay blocks were affected by the burst error.\n");
+		
+		exit(-1);
+	      } 
+	    }
 	  }
       }
+  printf("  ... was good to %2.1f%% (%.0f bits) wiped out\n",
+	 bestpercent,bestpercent/100.0*(n*8));
   }
   printf("\n  -- test passed.\n");
 
