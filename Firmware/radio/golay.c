@@ -80,6 +80,7 @@ golay_syndrome(__data uint32_t codeword)
 
 // encode 3 bytes data into 6 bytes of coded data
 // input is in g3[], output in g6[]
+// This uses complete lookup tables.
 static void 
 golay_encode24(void)
 {
@@ -122,7 +123,8 @@ golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in,
 		if (param_get(PARAM_ECC)==1) {
 			// Non-interleaved output
 			out[i*2+0] = g6[0]; out[i*2+1] = g6[1]; out[i*2+2] = g6[2]; 
-			out[i*2+3] = g6[3]; out[i*2+4] = g6[4]; out[i*2+5] = g6[5]; 		 } else {
+			out[i*2+3] = g6[3]; out[i*2+4] = g6[4]; out[i*2+5] = g6[5];
+		} else {
 			// Interleaved output to strengthen against burst errors
 			interleave_setbyte(out,i*2+0,g6[0]);
 			interleave_setbyte(out,i*2+1,g6[1]);
