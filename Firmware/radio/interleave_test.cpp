@@ -215,7 +215,8 @@ int main()
 	    int errcount=golay_decode(n*2,out,verify);
 	    if (bcmp(in,verify,n)) {
 	      if (e>0)
-		printf("Decode error for packet of %d bytes, with burst error from 0x%02x..0x%02x bytes inclusive\n",n,o,o+e-1);
+		printf("Decode error for packet of %d bytes, with burst error from 0x%02x..0x%02x bytes inclusive (%2f%% of length)\n",n,o,o+e-1,
+		       e*50.0/n);
 	      else
 		printf("Decode error for packet of %d bytes, with zero length burst error.\n",n);
 	      printf("  golay_decode() noticed %d errors.\n",errcount);
