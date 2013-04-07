@@ -111,9 +111,7 @@ extern __xdata uint16_t interleave_data_size;
 
 int show(char *m,int n, uint8_t *b);
 
-void 
-golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in, 
-	     __xdata uint8_t * __pdata out)
+extern void golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * __pdata out)
 {
 	uint8_t i;
 	interleave_data_size=n*2;
