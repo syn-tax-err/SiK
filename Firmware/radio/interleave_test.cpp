@@ -118,10 +118,30 @@ int main()
 		     k,n/3,n*8,k*steps[n/3]%(n*8));
 	      printf("us: bit*steps[n/3]%%(n*8) = %d*steps[%d]%%%d = %d\n",
 		     i*8+l,n/3,n*8,(i*8+l)*steps[n/3]%(n*8));
-	    }	
+	    }
 	exit(-1);
       }
+      int j;
+      for(j=0;j<=255;j++) {
+	interleave_setbyte(out,i,j);
+	if (interleave_getbyte(out,i)!=j) {
+	  printf("Test failed for interleave_{set,get}byte(n=%d,%d) value 0x%02x\n",
+		 n,i,j);
+	  printf("  Expected 0x%02x, but got 0x%02x\n",j,interleave_getbyte(out,i));
+	  printf("  Bits:\n");
+	  int k;
+	  for(k=0;k<8;k++) {
+	    printf("   bit %d(%d) : %d (bit number = %d)\n",
+		   k,i*8+k,
+		   interleave_getbit(interleave_data_size,out,(i*8)+k),
+		   bitnumber(interleave_data_size,(i*8)+k));
+	  }
+	  show("interleaved encoded data",n,out);
+	  exit(-1);
+	}
+      }
     }
+    printf("."); fflush(stdout);
   }
   printf("  -- test passed\n");
 
@@ -147,6 +167,19 @@ int main()
       printf("Decode error for packet of %d bytes\n",n);
       show("input",n,in);
       show("verify error (should be 0x00 -- 0xnn)",n,verify);
+
+      show("interleaved encoded version",n*2,out);
+      unsigned char out2[512];
+      interleave=0;
+      golay_encode(n,in,out2);
+      show("uninterleaved encoded version",n*2,out2);
+      
+      int k;
+      interleave_data_size=n*2;
+      for(k=0;k<n*2;k++)
+	out2[k]=interleave_getbyte(out,k);
+      show("de-interleaved version of interleaved encoded version",n*2,out2);
+
       exit(-1);
     }
   }
@@ -181,7 +214,7 @@ int main()
 	    // Verify that it still decodes properly
 	    bzero(verify,256);
 	    int errcount=golay_decode(n*2,out,verify);
-	    if (bcmp(in,verify,n)||errcount) {
+	    if (bcmp(in,verify,n)) {
 	      if (e>0)
 		printf("Decode error for packet of %d bytes, with burst error from 0x%02x..0x%02x bytes inclusive\n",n,o,o+e-1);
 	      else
@@ -189,11 +222,14 @@ int main()
 	      printf("  golay_decode() noticed %d errors.\n",errcount);
 	      show("input",n,in);
 	      show("verify error (should be 0x00 -- 0xnn)",n,verify);
+	      unsigned char out2[512];
+	      int k,count=0;
+	      for(k=0;k<n;k++) out2[k]=in[k]^verify[k];
+	      show("Differences",n,out2);
+	      
 	      showbitpattern(n*2,0,n*2,o*8,(o+e-1)*8+7);
 
 	      /* Show how the code words have been affected */
-	      unsigned char out2[512];
-	      int k,count=0;
 	      golay_encode(n,in,out2);
 	      for(k=0;k<n*2;k+=6) {
 		int m;
