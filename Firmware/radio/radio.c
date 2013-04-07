@@ -80,9 +80,9 @@ static void	clear_status_registers(void);
 bool
 radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 {
-	__data uint16_t crc1, crc2;
-	__data uint8_t errcount = 0;
-	__data uint8_t elen;
+	__xdata uint16_t crc1, crc2;
+	__xdata uint8_t errcount = 0;
+	__xdata uint8_t elen;
 
 	if (!packet_received) {
 		return false;
@@ -159,7 +159,7 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 	*length = buf[3+2];
 	
 	// Copy buffer down over headers ready for calculating CRC
-       	memcpy(radio_interleave_buffer,&buf[6],*length);
+	memcpy(radio_interleave_buffer,&buf[6],*length);
        
 	crc2 = crc16(*length, buf);
 	
