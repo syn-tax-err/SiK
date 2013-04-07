@@ -56,6 +56,32 @@ int countones(int n,unsigned char *b)
   return count;
 }
 
+int showbitpattern(int n,int byte_low,int byte_high,int burst_low,int burst_high)
+{
+  printf("Interleaved bit pattern:\n");
+  int i,j;
+  for(i=byte_low*8;i<byte_high*8;i+=8)
+    {
+      int affected=0;
+      for(j=i+7;j>=i;j--)
+	{
+	  int b=bitnumber(n,j);
+	  if (b>=burst_low&&b<=burst_high)
+	    affected=1;
+	}
+      if (affected) {
+	printf("byte 0x%02x : ",i/8);
+	for(j=i+7;j>=i;j--)
+	  {
+	    int b=bitnumber(n,j);
+	    printf("b7=0x%02x.%d ",b/8,b&7);
+	  }
+	printf("\n");
+      }
+    }
+  return 0;
+}
+
 int main()
 {
   int n;
@@ -122,5 +148,52 @@ int main()
     }
   }
   printf("  -- test passed.\n");
+ 
+  // Try interleaving and golay protecting a block of data
+  // 256 bytes of golay protected data = 128 bytes of raw data.
+  // But this time, introduce errors
+  printf("Testing interleaving at golay_{en,de}code() level with burst errors.\n");
+  int e,o,j;
+  for(n=126;n>0;n-=3) {
+    // Wiping out upto 1/4 of the bytes should not prevent reception
+    for(e=0;e<(n*2/4)-1;e++) 
+      {
+	for(o=(2*n)-e-1;o>=0;o--)
+	  {
+	    prefill(in);
+	    interleave=1;
+	    golay_encode(n,in,out);
+	    int icount=countones(n*2,out);
+	    interleave=0;
+	    golay_encode(n,in,out);
+	    int ncount=countones(n*2,out);
+	    if (icount!=ncount) {
+	      printf("Test failed: different number of set bits with/without"
+		     " interleaving: %d vs %d\n",icount,ncount);
+	      exit(-1);
+	    }
+	    // introduce the burst error
+	    for(j=o;j<o+e;j++) out[j]=0;
+
+	    // Verify that it still decodes properly
+	    bzero(verify,256);
+	    int errcount=golay_decode(n*2,out,verify);
+	    if (bcmp(in,verify,n)) {
+	      printf("Decode error for packet of %d bytes, with burst error from %d..%d bytes inclusive\n",n,o,o+e-1);
+	      printf("  golat_decode() noticed %d errors.\n",errcount);
+	      show("input",n,in);
+	      show("verify error (should be 0x00 -- 0xnn)",n,verify);
+	      showbitpattern(n*2,0,n*2,o*8,(o+e-1)*8+7);
+
+	      unsigned char out2[512];
+	      
+
+	      exit(-1);
+	    } else printf(".");
+	  }
+      }
+  }
+  printf("  -- test passed.\n");
+    
   return 0;
 }
