@@ -216,58 +216,59 @@ int main()
   // Try interleaving writing the data piece at a time using golay_encode_portion()
   // and make sure it works the same as doing the whole lot.
   printf("Testing golay_encode_portion()\n");
-  int split;
+  int split,interleave_flag;
   for(n=0;n<128;n+=3) {
-    for(split=n;split>=0;split-=3)
-      {
-	prefill(in);
-	interleave=0;
-	golay_encode(n,in,out);
-	int icount=countones(n*2,out);
-	interleave=1;
-	// Encode in two pieces, beginning with the last piece first
-	if (split<n) {
-	  offset_start=split;
-	  offset_end=n;
-	  golay_encode_portion(n*2,&in[offset_start],out);
-	}
-	if (split>0) {
-	  offset_start=0;
-	  offset_end=split-1;
-	  golay_encode_portion(n*2,&in[offset_start],out);
-	}
-	int ncount=countones(n*2,out);
-	if (icount!=ncount) {
-	  printf("Test failed: different number of set bits with/without"
-		 " interleaving: %d vs %d (n=%d, split=%d)\n",
-		 icount,ncount,n,split);
-	  show("output using golay_encode_portion()",n*2,out);
-	  golay_encode(n,in,out);
-	  show("output using golay_encode()",n*2,out);
-	  exit(-1);
-	}
-	bzero(verify,256);
-	int errcount=golay_decode(n*2,out,verify);
-	if (bcmp(in,verify,n)||errcount) {
-	  printf("Decode error for packet of %d bytes (errcount=%d)\n",n,errcount);
-	  show("input",n,in);
-	  show("verify error (should be 0x00 -- 0xnn)",n,verify);
-	  
-	  show("interleaved encoded version",n*2,out);
-	  unsigned char out2[512];
+    for(interleave_flag=0;interleave_flag<2;interleave_flag++)
+      for(split=n;split>=0;split-=3)
+	{
+	  prefill(in);
 	  interleave=0;
-	  golay_encode(n,in,out2);
-	  show("uninterleaved encoded version",n*2,out2);
-	  
-	  int k;
-	  interleave_data_size=n*2;
-	  for(k=0;k<n*2;k++)
-	    out2[k]=interleave_getbyte(out,k);
-	  show("de-interleaved version of interleaved encoded version",n*2,out2);
-	  
-	  exit(-1);
+	  golay_encode(n,in,out);
+	  int icount=countones(n*2,out);
+	  interleave=interleave_flag;
+	  // Encode in two pieces, beginning with the last piece first
+	  if (split<n) {
+	    offset_start=split;
+	    offset_end=n;
+	    golay_encode_portion(n*2,&in[offset_start],out);
+	  }
+	  if (split>0) {
+	    offset_start=0;
+	    offset_end=split-1;
+	    golay_encode_portion(n*2,&in[offset_start],out);
+	  }
+	  int ncount=countones(n*2,out);
+	  if (icount!=ncount) {
+	    printf("Test failed: different number of set bits with/without"
+		   " interleaving: %d vs %d (n=%d, split=%d)\n",
+		   icount,ncount,n,split);
+	    show("output using golay_encode_portion()",n*2,out);
+	    golay_encode(n,in,out);
+	    show("output using golay_encode()",n*2,out);
+	    exit(-1);
+	  }
+	  bzero(verify,256);
+	  int errcount=golay_decode(n*2,out,verify);
+	  if (bcmp(in,verify,n)||errcount) {
+	    printf("Decode error for packet of %d bytes (errcount=%d)\n",n,errcount);
+	    show("input",n,in);
+	    show("verify error (should be 0x00 -- 0xnn)",n,verify);
+	    
+	    show("interleaved encoded version",n*2,out);
+	    unsigned char out2[512];
+	    interleave=0;
+	    golay_encode(n,in,out2);
+	    show("uninterleaved encoded version",n*2,out2);
+	    
+	    int k;
+	    interleave_data_size=n*2;
+	    for(k=0;k<n*2;k++)
+	      out2[k]=interleave_getbyte(out,k);
+	    show("de-interleaved version of interleaved encoded version",n*2,out2);
+	    
+	    exit(-1);
+	  }
 	}
-      }
   }
   printf("  -- test passed.\n");
   
