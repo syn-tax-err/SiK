@@ -111,6 +111,35 @@ extern __xdata uint16_t interleave_data_size;
 
 int show(char *m,int n, uint8_t *b);
 
+__xdata uint8_t offset_start;
+__xdata uint8_t offset_end;
+void 
+golay_encode_portion(__pdata uint8_t en, __xdata uint8_t * __pdata in_piece, __xdata uint8_t * __pdata out)
+{
+	uint8_t i;
+	interleave_data_size=en;
+	for(i=offset_start;i+2<=offset_end;i+=3) {
+		g3[0] = in_piece[i+0-offset_start]; 
+		g3[1] = in_piece[i+1-offset_start]; 
+		g3[2] = in_piece[i+2-offset_start];
+		golay_encode24();
+		if (param_get(PARAM_ECC)==1) {
+			// Non-interleaved output
+			out[i*2+0] = g6[0]; out[i*2+1] = g6[1]; out[i*2+2] = g6[2]; 
+			out[i*2+3] = g6[3]; out[i*2+4] = g6[4]; out[i*2+5] = g6[5];
+		} else {
+			// Interleaved output to strengthen against burst errors
+			interleave_setbyte(out,i*2+0,g6[0]);
+			interleave_setbyte(out,i*2+1,g6[1]);
+			interleave_setbyte(out,i*2+2,g6[2]);
+			interleave_setbyte(out,i*2+3,g6[3]);
+			interleave_setbyte(out,i*2+4,g6[4]);
+			interleave_setbyte(out,i*2+5,g6[5]);
+		}
+	}
+	
+}
+
 void
 golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * __pdata out)
 {

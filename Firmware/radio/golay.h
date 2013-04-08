@@ -36,6 +36,13 @@
 /// encode n bytes of data into 2n coded bytes. n must be a multiple 3
 extern void golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * __pdata out);
 
+/// As above, but encode only a portion of a complete buffer.
+/// This is needed for interleaved golay encoding, where it is not possible to
+/// just append the pieces together.  The range of the output buffer to be encoded
+/// is specified with offset_start and offset_end.
+extern __xdata uint8_t offset_start;
+extern __xdata uint8_t offset_end;
+extern void golay_encode_portion(__pdata uint8_t en, __xdata uint8_t * __pdata in_piece, __xdata uint8_t * __pdata out);
 
 /// decode n bytes of coded data into n/2 bytes of original data
 /// n must be a multiple of 6

@@ -117,6 +117,7 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 	// the headers separate -- which means we can properly protect the headers
 	// instead of having all the header bits in the first part of the packet,
 	// and thus no better protected than if we had no interleaving.
+	// This is important for maintaining link, which relies on the headers.
 	memcpy(radio_interleave_buffer, radio_buffer, receive_packet_length);
 
 	// enable the receiver for the next packet. This also
@@ -438,6 +439,11 @@ radio_transmit_golay(uint8_t length, __xdata uint8_t * __pdata buf, __pdata uint
 	__xdata uint8_t gin[3];
 	__xdata uint8_t elen, rlen;
 
+	// PGS - This function needs revamping to support interleaved golay encoding
+	// Main change required is to prepare the entire packet in a buffer, and then
+	// call golay_encode() over the whole thing, instead of doing the headers
+	// separately at the beginning.
+
 	if (length > (sizeof(radio_buffer)/2)-6) {
 		debug("golay packet size %u\n", (unsigned)length);
 		panic("oversized golay packet");		
@@ -453,23 +459,26 @@ radio_transmit_golay(uint8_t length, __xdata uint8_t * __pdata buf, __pdata uint
 	gin[0] = netid[0];
 	gin[1] = netid[1];
 	gin[2] = length;
-
+	
 	// golay encode the header
-	golay_encode(3, gin, radio_buffer);
-
+	offset_start=0; offset_end=2;
+	golay_encode_portion(elen,gin, radio_buffer);
+	
 	// next add a CRC, we round to 3 bytes for simplicity, adding 
 	// another copy of the length in the spare byte
 	crc = crc16(length, buf);
 	gin[0] = crc&0xFF;
 	gin[1] = crc>>8;
 	gin[2] = length;
-
+	
 	// golay encode the CRC
-	golay_encode(3, gin, &radio_buffer[6]);
-
+	offset_start=3; offset_end=5;
+	golay_encode_portion(elen,gin, radio_buffer);
+	
 	// encode the rest of the payload
-	golay_encode(rlen, buf, &radio_buffer[12]);
-
+	offset_start=6; offset_end=rlen-1;
+	golay_encode_portion(elen,buf, radio_buffer);
+	
 	return radio_transmit_simple(elen, radio_buffer, timeout_ticks);
 }
 
