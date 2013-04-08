@@ -1,5 +1,6 @@
 #
 # Copyright (c) 2011 Michael Smith, All Rights Reserved
+# Copyright (c) 2013 Paul Gardner-Stephen, All Rights Reserved
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -83,6 +84,11 @@ clean:		$(filter clean~%,$(TARGETS))
 
 check_code:
 	@./tools/check_code.py
+
+check_interleaving:
+	# Test function of interleaved golay encoder
+	gcc -o interleave_test interleave_test.c
+	./interleave_test
 
 #
 # Composite target for handling the generic actions for each possible combination

@@ -23,8 +23,8 @@ int param_get(int param)
   else return 1;
 }
 
-#include "interleave.c"
-#include "golay.c"
+#include "radio/interleave.c"
+#include "radio/golay.c"
 
 int show(char *msg,int n,unsigned char *b)
 {
