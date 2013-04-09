@@ -28,7 +28,7 @@
 // OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
-//#define DEBUG 1
+// #define DEBUG 1
 
 #include "board.h"
 #include "radio.h"
@@ -83,6 +83,7 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 	__xdata uint16_t crc1, crc2;
 	__xdata uint8_t errcount = 0;
 	__xdata uint8_t elen;
+	__xdata uint8_t l;
 
 	if (!packet_received) {
 		return false;
@@ -103,6 +104,8 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 
 	if (!feature_golay) {
 		// simple unencoded packets
+		// PGS20130409: This seems to indicate that if golay is disabled, so is
+		// the netid code.
 		*length = receive_packet_length;
 		memcpy(buf, radio_buffer, receive_packet_length);
 		radio_receiver_on();
@@ -111,14 +114,23 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 
 	// Previously we decoded in the caller's buffer, so that the next
 	// packet could be received while we process this one.
-	// However, interleaving the FEC means that we can no longer do this.
-	// so we have a special receive buffer for this now.  This also allows
-	// us to golay protect the entire packet in one piece, instead of with
-	// the headers separate -- which means we can properly protect the headers
-	// instead of having all the header bits in the first part of the packet,
-	// and thus no better protected than if we had no interleaving.
-	// This is important for maintaining link, which relies on the headers.
+	// However, interleaving the FEC means that we can't decode the buffer in
+	// place, because the bits are scrambled all through the packet (which is
+	// the point, since burst errors will now be spread over many golay blocks).
+	// So we have a special receive buffer for the decoding now.  
+	// This also allows us to golay protect the entire packet in one piece,
+	// instead of with the headers separate -- which means we can properly
+	// protect the headers instead of having all the header bits in the first
+	// part of the packet, and thus no better protected than if we had no
+	// interleaving.
+	// This is important for maintaining link in marginal conditions, which
+	// relies on the headers.  Of course, the general improved tolerance of
+	// burst errors (typically upto about 10% of a packet) is expected to help
+	// with data delivery in general.
 	memcpy(radio_interleave_buffer, radio_buffer, receive_packet_length);
+
+	// radio_interleave_buffer now contains the interleaved golay encoded
+	// packet, and the radio buffer is now free to receive the next packet.
 
 	// enable the receiver for the next packet. This also
 	// enables the EX0 interrupt
@@ -137,20 +149,24 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 	// packets that are not for us).
 	errcount = golay_decode(elen,radio_interleave_buffer,buf);
 
+	// buf now contains the decoded packet, including headers.
+
 	// Check netid
 	if (buf[0] != netid[0] ||
 	    buf[1] != netid[1]) {
 		// its not for our network ID 		
-		debug("netid %x %x is not us.\n",
-		      (unsigned)gout[0],
-		      (unsigned)gout[1]);
+		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0))		
+			printf("netid %x %x is not us.\n",
+			       (unsigned)buf[0],
+			       (unsigned)buf[1]);
 		goto failed;
 	}
 
 	if (6*((buf[2]+2)/3+2) != elen) {
-		debug("rx len mismatch1 %u %u\n",
-		      (unsigned)gout[2],
-		      (unsigned)elen);	
+		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0))		
+			printf("rx len mismatch1 %u %u\n",
+			      (unsigned)buf[2],
+			      (unsigned)elen);	
 		goto failed;
 	}
 
@@ -160,17 +176,24 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 	*length = buf[3+2];
 	
 	// Copy buffer down over headers ready for calculating CRC
-	memcpy(radio_interleave_buffer,&buf[6],*length);
+	for(l=0;l<buf[3+2];l++) buf[l]=buf[l+6];
+	//	memcpy(radio_interleave_buffer,&buf[6],*length);
        
-	crc2 = crc16(*length, buf);
+	l=buf[3+2];
+	crc2 = crc16(l, buf);
 	
 	if (crc1 != crc2) {
-		debug("crc1=%x crc2=%x len=%u [%x %x]\n",
-		      (unsigned)crc1, 
-		      (unsigned)crc2, 
-		      (unsigned)*length,
-		      (unsigned)buf[0],
-		      (unsigned)buf[1]);
+		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0)) {
+			printf("CRC error");
+			printf(": crc in header=%0x%0x", 
+			       buf[3+1],buf[3+0]);
+			printf(" crc of data=%x",
+			       (unsigned)crc2);
+			printf(" len=%u",l);
+			printf(" [%x %x]\n",
+			       (unsigned)buf[0],
+			       (unsigned)buf[1]);
+		}
 		goto failed;
 	}
 
