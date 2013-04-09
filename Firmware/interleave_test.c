@@ -16,8 +16,10 @@
 
 uint8_t radio_buffer[252];
 uint8_t radio_buffer_count;
-uint8_t netid[2]={0x55,0xaa};
+uint8_t netid[2]={0xaa,0x55};
 #define debug(fmt, args...)
+
+int verbose=0;
 
 int interleave=1;
 int param_get(int param)
@@ -27,6 +29,21 @@ int param_get(int param)
     return 2;
   else return 1;
 }
+
+#define AT_TEST_FEC 4
+int at_testmode=AT_TEST_FEC;
+
+uint8_t radio_interleave_buffer[256];
+
+struct error_counts {
+	uint16_t rx_errors;		///< count of packet receive errors
+	uint16_t tx_errors;		///< count of packet transmit errors
+	uint16_t serial_tx_overflow;    ///< count of serial transmit overflows
+	uint16_t serial_rx_overflow;    ///< count of serial receive overflows
+	uint16_t corrected_errors;      ///< count of words corrected by golay code
+	uint16_t corrected_packets;     ///< count of packets corrected by golay code
+};
+struct error_counts errors;
 
 #include "radio/crc.c"
 #include "radio/interleave.c"
@@ -115,7 +132,26 @@ int main()
 	interleave=interleave_flag;
 
 	// Produce CRC and golay protected packet with netid headers and all.
+	// Ends up in radio_buffer and length in radio_buffer_count
 	golay_encode_packet(n,in);
+
+	// Now decode it and see what we get.
+	uint8_t length_out=0;
+	bzero(&out[0],sizeof(out));
+	int result=golay_decode_packet(&length_out,out,radio_buffer_count);
+	if (!result) {
+	  printf("Failed to decode encoded packet: interleave=0, n=%d\n",
+		 interleave,n);
+	  show("unencoded data",n,in);
+	  show("encoded packet",radio_buffer_count,radio_buffer);
+	  printf("packet length interpretted as = %d\n",(int)length_out);
+	  show("decoded packet header (if not already overwritten)",6,out);
+	  show("decoded packet",n,out);
+	  verbose=1;
+	  golay_encode_packet(n,in);
+
+	  exit(-1);
+	}
       }
   printf("  -- test passed.\n");
   

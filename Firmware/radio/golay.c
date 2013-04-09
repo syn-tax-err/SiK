@@ -138,6 +138,14 @@ golay_encode_portion(__pdata uint8_t en, __xdata uint8_t * __pdata in_piece, __x
 			interleave_setbyte(out,i*2+5,g6[5]);
 		}
 	}
+#ifdef INTERLEAVE_TEST
+	if (verbose) {
+		printf("After encoding bytes [%d..%d] (en=%d)\n",
+		       offset_start,offset_end,en);
+		show("bytes being encoded",offset_end-offset_start+1,in_piece);
+		show("buffer",en,out);
+	}
+#endif
 	
 }
 
@@ -238,11 +246,6 @@ golay_encode_packet(uint8_t length, __xdata uint8_t * __pdata buf)
 	__xdata uint8_t gin[3];
 	__xdata uint8_t elen, rlen;
 
-	// PGS - This function needs revamping to support interleaved golay encoding
-	// Main change required is to prepare the entire packet in a buffer, and then
-	// call golay_encode() over the whole thing, instead of doing the headers
-	// separately at the beginning.
-
 	if (length > (sizeof(radio_buffer)/2)-6) {
 		debug("golay packet size %u\n", (unsigned)length);
 		panic("oversized golay packet");		
@@ -275,8 +278,10 @@ golay_encode_packet(uint8_t length, __xdata uint8_t * __pdata buf)
 	golay_encode_portion(elen,gin, radio_buffer);
 	
 	// encode the rest of the payload
-	offset_start=6; offset_end=rlen-1;
-	golay_encode_portion(elen,buf, radio_buffer);
+	if (rlen>6) {
+		offset_start=6; offset_end=rlen-1;
+		golay_encode_portion(elen,buf, radio_buffer);
+	}
 	radio_buffer_count=elen;
 }
 
@@ -292,7 +297,7 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 
 	if (elen < 12 || (elen%6) != 0) {
 		// not a valid length
-		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>1))
+		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0))
 			printf("rx len invalid %u\n", (unsigned)elen);
 		goto failed;
 	}
@@ -309,9 +314,10 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 	    buf[1] != netid[1]) {
 		// its not for our network ID 		
 		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0))		
-			printf("netid %x %x is not us.\n",
+			printf("netid %x %x is not us (len=%u).\n",
 			       (unsigned)buf[0],
-			       (unsigned)buf[1]);
+			       (unsigned)buf[1],
+			       (unsigned)buf[2]);
 		goto failed;
 	}
 
