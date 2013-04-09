@@ -53,7 +53,10 @@
 // the biggest packet length we will allow. To allow for golay
 // encoding this needs to be a multiple of 6
 #define MAX_PACKET_LENGTH 252
-
+extern __xdata uint8_t radio_buffer[MAX_PACKET_LENGTH];
+extern __xdata uint8_t radio_buffer_count;
+extern __pdata uint8_t netid[2];
+extern __xdata uint8_t radio_interleave_buffer[MAX_PACKET_LENGTH];
 
 #include "board.h"
 #include "serial.h"

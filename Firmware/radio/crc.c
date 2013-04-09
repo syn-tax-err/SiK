@@ -33,9 +33,11 @@
 /// see http://www.8052.com/users/bigblack/index.phtml
 ///
 
+#ifndef INTERLEAVE_TEST
 #include <stdarg.h>
 #include "radio.h"
 #include "crc.h"
+#endif
 
 // CRC tables
 static __code uint8_t crc_tab1[256] =

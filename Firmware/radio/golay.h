@@ -47,3 +47,9 @@ extern void golay_encode_portion(__pdata uint8_t en, __xdata uint8_t * __pdata i
 /// decode n bytes of coded data into n/2 bytes of original data
 /// n must be a multiple of 6
 extern uint8_t golay_decode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * __pdata out);
+
+// Prepare a packet for transmission
+extern void golay_encode_packet(uint8_t length, __xdata uint8_t * __pdata buf);
+
+// The reverse of the above: take such a prepared packet and decode it.
+extern bool golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_t elen);

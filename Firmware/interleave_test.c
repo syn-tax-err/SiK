@@ -14,6 +14,11 @@
 #define __xdata
 #define PARAM_ECC 1
 
+uint8_t radio_buffer[252];
+uint8_t radio_buffer_count;
+uint8_t netid[2]={0x55,0xaa};
+#define debug(fmt, args...)
+
 int interleave=1;
 int param_get(int param)
 {
@@ -23,6 +28,7 @@ int param_get(int param)
   else return 1;
 }
 
+#include "radio/crc.c"
 #include "radio/interleave.c"
 #include "radio/golay.c"
 
@@ -93,86 +99,26 @@ int main()
   unsigned char verify[256];
 
   int v,e,o,b;
+  int split,interleave_flag;
+  
+  // Make sure that golay_encode_packet() and golay_decode_packet()
+  // work together properly.
+  // The maximum packet size in practice is 252bytes.  Half of that
+  // is golay overhead, leaving 126 bytes raw.  But 6 of those bytes
+  // are header, so there is really 120 bytes of data we can stuff in
+  // a packet.
+  printf("Testing golay_{en,de}code_packet() reciprocality.\n");
+  for(n=0;n<=120;n++)
+    for(interleave_flag=0;interleave_flag<2;interleave_flag++)
+      {
+	prefill(in);
+	interleave=interleave_flag;
 
-  printf("Testing interleaver at low level\n");
-
-  for(n=6;n<=510;n+=6) {
-    // Perform some diagnostics on the interleaver
-    bzero(out,512);
-    interleave_data_size=n;
-    //    printf("step=%d bits.\n",steps[n/3]);
-    int i;
-    for(i=0;i<n;i++) {
-      interleave_setbyte(out,i,0x55);
-      int r=interleave_getbyte(out,i);
-      if (r!=0x55)
-	{
-	  printf("wrote 0x55 to byte %d of block with length = %d, but it read back as 0x%02x\n",
-		 i,n,r);
-	  show("encoded block",n,out);	  
-	  exit(-1);
-	}
-      interleave_setbyte(out,i,0xaa);
-      r=interleave_getbyte(out,i);
-      if (r!=0xaa)
-	{
-	  printf("wrote 0xaa to byte %d of block with length = %d, but it read back as 0x%02x\n",
-		 i,n,r);
-	  show("encoded block",n,out);	  
-	  exit(-1);
-	}
-
-      interleave_setbyte(out,i,0xff);
-      int ones=countones(n,out);
-      if (ones!=((i+1)*8)) {
-	printf("Test failed for golay encoded packet size=%d\n",n);
-	printf("n=%d, i=%d\n",n,i);
-	show("bits clash with another byte",n,out);
-	int k,l;
-	for(k=0;k<(8*i);k++) 
-	  for(l=0;l<8;l++) 
-	    if (bitnumber(n,k)==bitnumber(n,i*8+l)) {
-	      printf("  byte %d.%d (bit=%d) clashes with bit %d of this byte"
-		     " @ bit %d\n",
-		     k/8,k&7,k,l,bitnumber(n,i*8+l));
-	      printf("them: bit*steps[n/3]%%(n*8) = %d*steps[%d]%%%d = %d\n",
-		     k,n/3,n*8,k*steps[n/3]%(n*8));
-	      printf("us: bit*steps[n/3]%%(n*8) = %d*steps[%d]%%%d = %d\n",
-		     i*8+l,n/3,n*8,(i*8+l)*steps[n/3]%(n*8));
-	    }
-	for(k=0;k<8*n;k++) {
-	  printf("   bit #%3d -> bit %d\n",k,bitnumber(n,k));
-	  int l;
-	  for(l=0;l<k;l++)
-	    if (bitnumber(n,l)==bitnumber(n,k)) printf("  which is the same as for bit #%d\n",l);
-	}
-
-	exit(-1);
+	// Produce CRC and golay protected packet with netid headers and all.
+	golay_encode_packet(n,in);
       }
-      int j;
-      for(j=0;j<=255;j++) {
-	interleave_setbyte(out,i,j);
-	if (interleave_getbyte(out,i)!=j) {
-	  printf("Test failed for interleave_{set,get}byte(n=%d,%d) value 0x%02x\n",
-		 n,i,j);
-	  printf("  Expected 0x%02x, but got 0x%02x\n",j,interleave_getbyte(out,i));
-	  printf("  Bits:\n");
-	  int k;
-	  for(k=0;k<8;k++) {
-	    printf("   bit %d(%d) : %d (bit number = %d)\n",
-		   k,i*8+k,
-		   interleave_getbit(interleave_data_size,out,(i*8)+k),
-		   bitnumber(interleave_data_size,(i*8)+k));
-	  }
-	  show("interleaved encoded data",n,out);
-	  exit(-1);
-	}
-      }
-    }
-    printf("."); fflush(stdout);
-  }
-  printf("\n  -- test passed\n");
-
+  printf("  -- test passed.\n");
+  
   // Try interleaving and golay protecting a block of data
   // 256 bytes of golay protected data = 128 bytes of raw data.
   printf("Testing interleaving at golay_{en,de}code() level.\n");
@@ -216,7 +162,6 @@ int main()
   // Try interleaving writing the data piece at a time using golay_encode_portion()
   // and make sure it works the same as doing the whole lot.
   printf("Testing golay_encode_portion()\n");
-  int split,interleave_flag;
   for(n=0;n<128;n+=3) {
     for(interleave_flag=0;interleave_flag<2;interleave_flag++)
       for(split=n;split>=0;split-=3)
@@ -358,6 +303,85 @@ int main()
 	 bestpercent,bestpercent/100.0*(n*8));
   }
   printf("\n  -- test passed.\n");
+
+  printf("Testing interleaver at low level\n");
+
+  for(n=6;n<=510;n+=6) {
+    // Perform some diagnostics on the interleaver
+    bzero(out,512);
+    interleave_data_size=n;
+    //    printf("step=%d bits.\n",steps[n/3]);
+    int i;
+    for(i=0;i<n;i++) {
+      interleave_setbyte(out,i,0x55);
+      int r=interleave_getbyte(out,i);
+      if (r!=0x55)
+	{
+	  printf("wrote 0x55 to byte %d of block with length = %d, but it read back as 0x%02x\n",
+		 i,n,r);
+	  show("encoded block",n,out);	  
+	  exit(-1);
+	}
+      interleave_setbyte(out,i,0xaa);
+      r=interleave_getbyte(out,i);
+      if (r!=0xaa)
+	{
+	  printf("wrote 0xaa to byte %d of block with length = %d, but it read back as 0x%02x\n",
+		 i,n,r);
+	  show("encoded block",n,out);	  
+	  exit(-1);
+	}
+
+      interleave_setbyte(out,i,0xff);
+      int ones=countones(n,out);
+      if (ones!=((i+1)*8)) {
+	printf("Test failed for golay encoded packet size=%d\n",n);
+	printf("n=%d, i=%d\n",n,i);
+	show("bits clash with another byte",n,out);
+	int k,l;
+	for(k=0;k<(8*i);k++) 
+	  for(l=0;l<8;l++) 
+	    if (bitnumber(n,k)==bitnumber(n,i*8+l)) {
+	      printf("  byte %d.%d (bit=%d) clashes with bit %d of this byte"
+		     " @ bit %d\n",
+		     k/8,k&7,k,l,bitnumber(n,i*8+l));
+	      printf("them: bit*steps[n/3]%%(n*8) = %d*steps[%d]%%%d = %d\n",
+		     k,n/3,n*8,k*steps[n/3]%(n*8));
+	      printf("us: bit*steps[n/3]%%(n*8) = %d*steps[%d]%%%d = %d\n",
+		     i*8+l,n/3,n*8,(i*8+l)*steps[n/3]%(n*8));
+	    }
+	for(k=0;k<8*n;k++) {
+	  printf("   bit #%3d -> bit %d\n",k,bitnumber(n,k));
+	  int l;
+	  for(l=0;l<k;l++)
+	    if (bitnumber(n,l)==bitnumber(n,k)) printf("  which is the same as for bit #%d\n",l);
+	}
+
+	exit(-1);
+      }
+      int j;
+      for(j=0;j<=255;j++) {
+	interleave_setbyte(out,i,j);
+	if (interleave_getbyte(out,i)!=j) {
+	  printf("Test failed for interleave_{set,get}byte(n=%d,%d) value 0x%02x\n",
+		 n,i,j);
+	  printf("  Expected 0x%02x, but got 0x%02x\n",j,interleave_getbyte(out,i));
+	  printf("  Bits:\n");
+	  int k;
+	  for(k=0;k<8;k++) {
+	    printf("   bit %d(%d) : %d (bit number = %d)\n",
+		   k,i*8+k,
+		   interleave_getbit(interleave_data_size,out,(i*8)+k),
+		   bitnumber(interleave_data_size,(i*8)+k));
+	  }
+	  show("interleaved encoded data",n,out);
+	  exit(-1);
+	}
+      }
+    }
+    printf("."); fflush(stdout);
+  }
+  printf("\n  -- test passed\n");
 
   // Make sure it can recover from upto 3 bits wrong.
   // For computational efficiency, we will only consider

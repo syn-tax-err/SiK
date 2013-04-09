@@ -35,6 +35,7 @@
 #include <stdarg.h>
 #ifndef INTERLEAVE_TEST
 #include "radio.h"
+#include "crc.h"
 #endif
 #include "golay23.h"
 
@@ -228,4 +229,145 @@ golay_decode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * 
 		out += 3;
 	}
 	return errcount;
+}
+
+void
+golay_encode_packet(uint8_t length, __xdata uint8_t * __pdata buf)
+{
+	__pdata uint16_t crc;
+	__xdata uint8_t gin[3];
+	__xdata uint8_t elen, rlen;
+
+	// PGS - This function needs revamping to support interleaved golay encoding
+	// Main change required is to prepare the entire packet in a buffer, and then
+	// call golay_encode() over the whole thing, instead of doing the headers
+	// separately at the beginning.
+
+	if (length > (sizeof(radio_buffer)/2)-6) {
+		debug("golay packet size %u\n", (unsigned)length);
+		panic("oversized golay packet");		
+	}
+
+	// rounded length
+	rlen = ((length+2)/3)*3;
+
+	// encoded length
+	elen = (rlen+6)*2;
+
+	// start of packet is network ID and packet length
+	gin[0] = netid[0];
+	gin[1] = netid[1];
+	gin[2] = length;
+	
+	// golay encode the header
+	offset_start=0; offset_end=2;
+	golay_encode_portion(elen,gin, radio_buffer);
+	
+	// next add a CRC, we round to 3 bytes for simplicity, adding 
+	// another copy of the length in the spare byte
+	crc = crc16(length, buf);
+	gin[0] = crc&0xFF;
+	gin[1] = crc>>8;
+	gin[2] = length;
+	
+	// golay encode the CRC
+	offset_start=3; offset_end=5;
+	golay_encode_portion(elen,gin, radio_buffer);
+	
+	// encode the rest of the payload
+	offset_start=6; offset_end=rlen-1;
+	golay_encode_portion(elen,buf, radio_buffer);
+	radio_buffer_count=elen;
+}
+
+bool 
+golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_t elen)
+{
+	// Packet is already in radio_interleave_buffer, and length
+	// is in receive_packet_length
+
+	__xdata uint16_t crc1, crc2;
+	__xdata uint8_t errcount = 0;
+	__xdata uint8_t l;
+
+	if (elen < 12 || (elen%6) != 0) {
+		// not a valid length
+		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>1))
+			printf("rx len invalid %u\n", (unsigned)elen);
+		goto failed;
+	}
+
+	// decode the entire packet (necessary due to interleaving,
+	// even though we might waste some processor power decoding
+	// packets that are not for us).
+	errcount = golay_decode(elen,radio_interleave_buffer,buf);
+
+	// buf now contains the decoded packet, including headers.
+
+	// Check netid
+	if (buf[0] != netid[0] ||
+	    buf[1] != netid[1]) {
+		// its not for our network ID 		
+		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0))		
+			printf("netid %x %x is not us.\n",
+			       (unsigned)buf[0],
+			       (unsigned)buf[1]);
+		goto failed;
+	}
+
+	if (6*((buf[2]+2)/3+2) != elen) {
+		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0))		
+			printf("rx len mismatch1 %u %u\n",
+			       (unsigned)buf[2],
+			       (unsigned)elen);	
+		goto failed;
+	}
+
+	// extract the sender CRC
+	crc1 = buf[3+0] | (((uint16_t)buf[3+1])<<8);
+
+	*length = buf[3+2];
+	
+	// Copy buffer down over headers ready for calculating CRC
+	for(l=0;l<buf[3+2];l++) buf[l]=buf[l+6];
+	//	memcpy(radio_interleave_buffer,&buf[6],*length);
+       
+	l=buf[3+2];
+	crc2 = crc16(l, buf);
+	
+	if (crc1 != crc2) {
+		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0)) {
+			printf("CRC error");
+			printf(": crc in header=%x.%x", 
+			       buf[3+1],buf[3+0]);
+			printf(" crc of data=%x",
+			       (unsigned)crc2);
+			printf(" len=%u",l);
+			printf(" [%x %x]\n",
+			       (unsigned)buf[0],
+			       (unsigned)buf[1]);
+		}
+		goto failed;
+	}
+
+	if (errcount != 0) {
+		if ((uint16_t)(0xFFFF - errcount) > errors.corrected_errors) {
+			errors.corrected_errors += errcount;
+		} else {
+			errors.corrected_errors = 0xFFFF;
+		}
+		if (errors.corrected_packets != 0xFFFF) {
+			errors.corrected_packets++;
+		}
+	}
+
+	if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0)) 
+		printf("Received OK packet (len=%u)\n",l);
+	return true;
+
+ failed:
+	if (errors.rx_errors != 0xFFFF) {
+		errors.rx_errors++;
+	}
+	return false;
 }
