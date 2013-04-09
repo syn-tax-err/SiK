@@ -80,7 +80,7 @@ static void	clear_status_registers(void);
 // returns true on success, false on no packet available
 //
 bool
-radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
+radio_receive_packet(uint8_t *length, __xdata uint8_t * __xdata buf)
 {
 	__xdata uint8_t elen;
 

@@ -148,7 +148,7 @@ __pdata extern struct error_counts errors;
 /// @param buf			Pointer to storage for the packet
 /// @return			True if a packet was received
 ///
-extern bool radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf);
+extern bool radio_receive_packet(uint8_t *length, __xdata uint8_t * __xdata buf);
 
 /// test whether the radio has detected a packet preamble
 ///
