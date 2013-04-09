@@ -31,7 +31,7 @@ int param_get(int param)
 }
 
 #define AT_TEST_FEC 4
-int at_testmode=AT_TEST_FEC;
+int at_testmode=0;
 
 uint8_t radio_interleave_buffer[256];
 
@@ -151,7 +151,9 @@ int main()
 	  show("decoded packet header (if not already overwritten)",6,out);
 	  show("decoded packet",n,out);
 	  verbose=1;
+	  at_testmode=AT_TEST_FEC;
 	  golay_encode_packet(n,in);
+	  golay_decode_packet(&length_out,out,radio_buffer_count);
 	  int errs=golay_decode(radio_buffer_count,radio_buffer,out);
 	  printf("Packet contained %d golay errors.\n",errs);
 	  show("decoded packet (including headers)",n+6,out);
