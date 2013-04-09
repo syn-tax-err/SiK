@@ -306,7 +306,13 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 	// even though we might waste some processor power decoding
 	// packets that are not for us).
 	errcount = golay_decode(elen,radio_interleave_buffer,buf);
-
+#ifdef INTERLEAVE_TEST
+	if (verbose) {
+		printf("elen=%d\n",elen);
+		show("radio_interleave_buffer",elen,radio_interleave_buffer);
+		show("buf",elen/2,buf);
+	}
+#endif
 	// buf now contains the decoded packet, including headers.
 
 	// Check netid

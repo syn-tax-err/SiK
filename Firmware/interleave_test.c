@@ -134,6 +134,9 @@ int main()
 	// Produce CRC and golay protected packet with netid headers and all.
 	// Ends up in radio_buffer and length in radio_buffer_count
 	golay_encode_packet(n,in);
+	
+	// Copy it into the buffer where we expect it for decoding.
+	bcopy(radio_buffer,radio_interleave_buffer,radio_buffer_count);
 
 	// Now decode it and see what we get.
 	uint8_t length_out=0;
@@ -149,7 +152,9 @@ int main()
 	  show("decoded packet",n,out);
 	  verbose=1;
 	  golay_encode_packet(n,in);
-
+	  int errs=golay_decode(radio_buffer_count,radio_buffer,out);
+	  printf("Packet contained %d golay errors.\n",errs);
+	  show("decoded packet (including headers)",n+6,out);
 	  exit(-1);
 	}
       }
