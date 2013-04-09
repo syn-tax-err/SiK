@@ -278,8 +278,8 @@ golay_encode_packet(uint8_t length, __xdata uint8_t * __pdata buf)
 	golay_encode_portion(elen,gin, radio_buffer);
 	
 	// encode the rest of the payload
-	if (rlen>6) {
-		offset_start=6; offset_end=rlen-1;
+	if (rlen>0) {
+		offset_start=6; offset_end=6+rlen-1;
 		golay_encode_portion(elen,buf, radio_buffer);
 	}
 	radio_buffer_count=elen;
@@ -293,7 +293,7 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 
 	__xdata uint16_t crc1, crc2;
 	__xdata uint8_t errcount = 0;
-	__xdata uint8_t l;
+	__xdata uint8_t l,i;
 
 	if (elen < 12 || (elen%6) != 0) {
 		// not a valid length
@@ -340,12 +340,10 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 
 	*length = buf[3+2];
 	
-	// Copy buffer down over headers ready for calculating CRC
-	for(l=0;l<buf[3+2];l++) buf[l]=buf[l+6];
 	//	memcpy(radio_interleave_buffer,&buf[6],*length);
        
 	l=buf[3+2];
-	crc2 = crc16(l, buf);
+	crc2 = crc16(l, &buf[6]);
 	
 	if (crc1 != crc2) {
 		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0)) {
@@ -372,6 +370,9 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 			errors.corrected_packets++;
 		}
 	}
+
+	// Copy buffer down over headers ready for returning
+	for(i=0;i<l;i++) buf[i]=buf[i+6];
 
 	if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0)) 
 		printf("Received OK packet (len=%u)\n",l);
