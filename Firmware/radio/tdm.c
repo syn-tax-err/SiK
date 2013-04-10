@@ -166,6 +166,8 @@ tdm_show_rssi(void)
 	       (unsigned)errors.corrected_packets,
 	       (int)radio_temperature(),
 	       (unsigned)duty_cycle_offset);
+	printf("TIMING: Last golay decode: start=0x%x, end=0x%x, bytes decoded=0x%x\n",
+	       golay_decode_start_time,golay_decode_end_time,golay_decode_time_bytes);
 	statistics.receive_count = 0;
 }
 

@@ -260,7 +260,28 @@ __xdata uint16_t interleave_data_size;
 uint8_t interleave_getbyte(__xdata uint8_t * __pdata in,
 			   __pdata uint16_t index)
 {
-  register uint8_t v=0;
+  register uint8_t v;
+#if 1
+  register uint16_t bit=bitnumber(interleave_data_size,index*8);
+  register uint16_t step=steps[interleave_data_size/3];
+  register uint16_t thresh=interleave_data_size*8;
+  v=(in[bit>>3]>>(bit&7))&1;
+  bit+=step; if (bit>thresh) bit-=thresh;
+  v|=((in[bit>>3]>>(bit&7))&1)<<1;
+  bit+=step; if (bit>thresh) bit-=thresh;
+  v|=((in[bit>>3]>>(bit&7))&1)<<2;
+  bit+=step; if (bit>thresh) bit-=thresh;
+  v|=((in[bit>>3]>>(bit&7))&1)<<3;
+  bit+=step; if (bit>thresh) bit-=thresh;
+  v|=((in[bit>>3]>>(bit&7))&1)<<4;
+  bit+=step; if (bit>thresh) bit-=thresh;
+  v|=((in[bit>>3]>>(bit&7))&1)<<5;
+  bit+=step; if (bit>thresh) bit-=thresh;
+  v|=((in[bit>>3]>>(bit&7))&1)<<6;
+  bit+=step; if (bit>thresh) bit-=thresh;
+  v|=((in[bit>>3]>>(bit&7))&1)<<7;
+#else
+  v=0;
   v|=interleave_getbit(interleave_data_size,in,index*8+0);
   v|=interleave_getbit(interleave_data_size,in,index*8+1)<<1;
   v|=interleave_getbit(interleave_data_size,in,index*8+2)<<2;
@@ -269,6 +290,7 @@ uint8_t interleave_getbyte(__xdata uint8_t * __pdata in,
   v|=interleave_getbit(interleave_data_size,in,index*8+5)<<5;
   v|=interleave_getbit(interleave_data_size,in,index*8+6)<<6;
   v|=interleave_getbit(interleave_data_size,in,index*8+7)<<7;
+#endif
   return v;
 }
 

@@ -21,6 +21,8 @@ uint8_t netid[2]={0xaa,0x55};
 
 int verbose=0;
 
+int feature_golay=1;
+int feature_golay_interleaving=1;
 int interleave=1;
 int param_get(int param)
 {
@@ -28,6 +30,11 @@ int param_get(int param)
   if (interleave)
     return 2;
   else return 1;
+}
+int setInterleaveP(int yesno)
+{
+  interleave=yesno;
+  feature_golay_interleaving=yesno;
 }
 
 #define AT_TEST_FEC 4
@@ -129,7 +136,7 @@ int main()
     for(interleave_flag=0;interleave_flag<2;interleave_flag++)
       {
 	prefill(in);
-	interleave=interleave_flag;
+	setInterleaveP(interleave_flag);
 
 	// Produce CRC and golay protected packet with netid headers and all.
 	// Ends up in radio_buffer and length in radio_buffer_count
@@ -167,10 +174,10 @@ int main()
   printf("Testing interleaving at golay_{en,de}code() level.\n");
   for(n=0;n<128;n+=3) {
     prefill(in);
-    interleave=0;
+    setInterleaveP(0);
     golay_encode(n,in,out);
     int icount=countones(n*2,out);
-    interleave=1;
+    setInterleaveP(1);
     golay_encode(n,in,out);
     int ncount=countones(n*2,out);
     if (icount!=ncount) {
@@ -187,7 +194,7 @@ int main()
 
       show("interleaved encoded version",n*2,out);
       unsigned char out2[512];
-      interleave=0;
+      setInterleaveP(0);
       golay_encode(n,in,out2);
       show("uninterleaved encoded version",n*2,out2);
       
@@ -210,10 +217,10 @@ int main()
       for(split=n;split>=0;split-=3)
 	{
 	  prefill(in);
-	  interleave=0;
+	  setInterleaveP(0);
 	  golay_encode(n,in,out);
 	  int icount=countones(n*2,out);
-	  interleave=interleave_flag;
+	  setInterleaveP(interleave_flag);
 	  // Encode in two pieces, beginning with the last piece first
 	  if (split<n) {
 	    offset_start=split;
@@ -244,7 +251,7 @@ int main()
 	    
 	    show("interleaved encoded version",n*2,out);
 	    unsigned char out2[512];
-	    interleave=0;
+	    setInterleaveP(0);
 	    golay_encode(n,in,out2);
 	    show("uninterleaved encoded version",n*2,out2);
 	    
@@ -275,10 +282,10 @@ int main()
 	for(o=(2*n)-e-1;o>=0;o--)
 	  {
 	    prefill(in);
-	    interleave=0;
+	    setInterleaveP(0);
 	    golay_encode(n,in,out);
 	    int icount=countones(n*2,out);
-	    interleave=1;
+	    setInterleaveP(1);
 	    golay_encode(n,in,out);
 	    int ncount=countones(n*2,out);
 	    if (icount!=ncount) {

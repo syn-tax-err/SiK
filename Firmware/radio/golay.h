@@ -32,6 +32,10 @@
 /// golay 23/12 error correction encoding and decoding
 ///
 
+// Collect timing stats for golay decoding
+extern __xdata uint16_t golay_decode_start_time;
+extern __xdata uint16_t golay_decode_end_time;
+extern __xdata uint8_t golay_decode_time_bytes;
 
 /// encode n bytes of data into 2n coded bytes. n must be a multiple 3
 extern void golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * __pdata out);

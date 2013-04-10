@@ -44,6 +44,15 @@ __xdata uint8_t radio_buffer_count;
 __xdata uint8_t radio_interleave_buffer[MAX_PACKET_LENGTH];
 __pdata uint8_t receive_packet_length;
 __pdata uint8_t partial_packet_length;
+
+// Collect timing stats for golay decoding
+// Interleaved decoding takes about 400x16usec ticks per 3 bytes(!)
+// using the naive code.
+// By optimising interleave_getbyte() this is now down to 190 ticks per byte.
+__xdata uint16_t golay_decode_start_time;
+__xdata uint16_t golay_decode_end_time;
+__xdata uint8_t golay_decode_time_bytes;
+
 __pdata uint8_t last_rssi;
 __pdata uint8_t netid[2];
 
@@ -111,6 +120,8 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __xdata buf)
 		return true;
 	}
 
+	golay_decode_start_time=timer2_tick();
+
 	// Previously we decoded in the caller's buffer, so that the next
 	// packet could be received while we process this one.
 	// However, interleaving the FEC means that we can't decode the buffer in
@@ -136,7 +147,12 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __xdata buf)
 	elen = receive_packet_length;
 	radio_receiver_on();	
 	
-	return golay_decode_packet(length,buf,elen);
+	{
+		bool result = golay_decode_packet(length,buf,elen);
+		golay_decode_end_time=timer2_tick();
+		golay_decode_time_bytes=*length;
+		return result;
+	}
 
  failed:
 	if (errors.rx_errors != 0xFFFF) {
