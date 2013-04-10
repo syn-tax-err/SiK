@@ -71,6 +71,7 @@ extern __pdata uint8_t pdata_canary;
 
 /// optional features
 extern bool feature_golay;
+extern bool feature_golay_interleaving;
 extern bool feature_opportunistic_resend;
 extern bool feature_mavlink_framing;
 extern bool feature_rtscts;

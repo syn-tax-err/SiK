@@ -126,7 +126,7 @@ golay_encode_portion(__pdata uint8_t en, __xdata uint8_t * __pdata in_piece, __x
 		g3[1] = in_piece[i+1-offset_start]; 
 		g3[2] = in_piece[i+2-offset_start];
 		golay_encode24();
-		if (param_get(PARAM_ECC)==1) {
+		if (feature_golay_interleaving==false) {
 			// Non-interleaved output
 			out[i*2+0] = g6[0]; out[i*2+1] = g6[1]; out[i*2+2] = g6[2]; 
 			out[i*2+3] = g6[3]; out[i*2+4] = g6[4]; out[i*2+5] = g6[5];
@@ -159,7 +159,7 @@ golay_encode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * 
 	for(i=0;i!=n;i+=3) {
 		g3[0] = in[i+0]; g3[1] = in[i+1]; g3[2] = in[i+2];
 		golay_encode24();
-		if (param_get(PARAM_ECC)==1) {
+		if (feature_golay_interleaving==false) {
 			// Non-interleaved output
 			out[i*2+0] = g6[0]; out[i*2+1] = g6[1]; out[i*2+2] = g6[2]; 
 			out[i*2+3] = g6[3]; out[i*2+4] = g6[4]; out[i*2+5] = g6[5];
@@ -222,7 +222,7 @@ golay_decode(__pdata uint8_t n, __xdata uint8_t * __pdata in, __xdata uint8_t * 
 	uint8_t i;
 	interleave_data_size=n;
 	for(i=0;i<n;i+=6) {
-		if (param_get(PARAM_ECC)==1) {
+		if (feature_golay_interleaving==false) {
 			g6[0] = in[0]; g6[1] = in[1]; g6[2] = in[2];
 			g6[3] = in[3]; g6[4] = in[4]; g6[5] = in[5];
 			in += 6;
@@ -299,10 +299,8 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 
 	if (elen < 12 || (elen%6) != 0) {
 		// not a valid length
-#ifdef DEBUG
-		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0))
+		if (at_testmode&AT_TEST_FEC&&(feature_golay==true))
 			printf("rx len invalid %u\n", (unsigned)elen);
-#endif
 		goto failed;
 	}
 
@@ -323,19 +321,17 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 	if (buf[0] != netid[0] ||
 	    buf[1] != netid[1]) {
 		// its not for our network ID
-#ifdef DEBUG	
-		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0))		
+		if (at_testmode&AT_TEST_FEC&&feature_golay)		
 			printf("netid %x %x is not us (len=%u).\n",
 			       (unsigned)buf[0],
 			       (unsigned)buf[1],
 			       (unsigned)buf[2]);
-#endif
 		goto failed;
 	}
 
 	if (6*((buf[2]+2)/3+2) != elen) {
 #ifdef DEBUG
-		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0))		
+		if (at_testmode&AT_TEST_FEC&&feature_golay)		
 			printf("rx len mismatch1 %u %u\n",
 			       (unsigned)buf[2],
 			       (unsigned)elen);	
@@ -354,9 +350,10 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 	crc2 = crc16(l, &buf[6]);
 	
 	if (crc1 != crc2) {
+		if (at_testmode&AT_TEST_FEC&&feature_golay) {
+			printf("CRC error\n");
 #ifdef DEBUG
-		if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0)) {
-			printf("CRC error");
+
 			printf(": crc in header=%x.%x", 
 			       buf[3+1],buf[3+0]);
 			printf(" crc of data=%x",
@@ -365,8 +362,8 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 			printf(" [%x %x]\n",
 			       (unsigned)buf[0],
 			       (unsigned)buf[1]);
-		}
 #endif
+		}
 		goto failed;
 	}
 
@@ -385,7 +382,7 @@ golay_decode_packet(uint8_t *length,__xdata uint8_t * __pdata buf,__xdata uint8_
 	for(i=0;i<l;i++) buf[i]=buf[i+6];
 
 #ifdef DEBUG
-	if (at_testmode&AT_TEST_FEC&&(param_get(PARAM_ECC)>0)) 
+	if (at_testmode&AT_TEST_FEC&&feature_golay) 
 		printf("Received OK packet (len=%u)\n",l);
 #endif
 	return true;

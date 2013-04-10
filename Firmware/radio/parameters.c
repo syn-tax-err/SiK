@@ -110,6 +110,10 @@ param_check(__pdata enum ParamID id, __data uint32_t val)
 	case PARAM_ECC:
 		// 1 = Golay
 		// 2 = Golay + interleaving
+		if (val > 0) feature_golay=true; 
+		else feature_golay=false;
+		if (val == 2) feature_golay_interleaving=true; 
+		else feature_golay_interleaving=false;
 		if (val > 2)
 			return false;
 		break;
