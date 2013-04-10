@@ -266,19 +266,19 @@ uint8_t interleave_getbyte(__xdata uint8_t * __pdata in,
   register uint16_t step=steps[interleave_data_size/3];
   register uint16_t thresh=interleave_data_size*8;
   v=(in[bit>>3]>>(bit&7))&1;
-  bit+=step; if (bit>thresh) bit-=thresh;
+  bit+=step; if (bit>=thresh) bit-=thresh;
   v|=((in[bit>>3]>>(bit&7))&1)<<1;
-  bit+=step; if (bit>thresh) bit-=thresh;
+  bit+=step; if (bit>=thresh) bit-=thresh;
   v|=((in[bit>>3]>>(bit&7))&1)<<2;
-  bit+=step; if (bit>thresh) bit-=thresh;
+  bit+=step; if (bit>=thresh) bit-=thresh;
   v|=((in[bit>>3]>>(bit&7))&1)<<3;
-  bit+=step; if (bit>thresh) bit-=thresh;
+  bit+=step; if (bit>=thresh) bit-=thresh;
   v|=((in[bit>>3]>>(bit&7))&1)<<4;
-  bit+=step; if (bit>thresh) bit-=thresh;
+  bit+=step; if (bit>=thresh) bit-=thresh;
   v|=((in[bit>>3]>>(bit&7))&1)<<5;
-  bit+=step; if (bit>thresh) bit-=thresh;
+  bit+=step; if (bit>=thresh) bit-=thresh;
   v|=((in[bit>>3]>>(bit&7))&1)<<6;
-  bit+=step; if (bit>thresh) bit-=thresh;
+  bit+=step; if (bit>=thresh) bit-=thresh;
   v|=((in[bit>>3]>>(bit&7))&1)<<7;
 #else
   v=0;
