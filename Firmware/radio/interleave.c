@@ -296,8 +296,10 @@ uint8_t interleave_getbyte(__xdata uint8_t * __pdata in,
 
 void interleave_setbyte(__xdata uint8_t * __pdata in,
 			__pdata uint16_t index, uint8_t __pdata value)
-{
-#if 1
+{  
+#if 0
+	// The following code works, but is disabled because of lack of OSEG RAM
+	// on the RFD900a.
   register uint16_t bit=bitnumber(interleave_data_size,index*8);
   register uint16_t step=steps[interleave_data_size/3];
   register uint16_t thresh=interleave_data_size*8;
