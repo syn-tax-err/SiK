@@ -297,6 +297,27 @@ uint8_t interleave_getbyte(__xdata uint8_t * __pdata in,
 void interleave_setbyte(__xdata uint8_t * __pdata in,
 			__pdata uint16_t index, uint8_t __pdata value)
 {
+#if 1
+  register uint16_t bit=bitnumber(interleave_data_size,index*8);
+  register uint16_t step=steps[interleave_data_size/3];
+  register uint16_t thresh=interleave_data_size*8;
+
+  if (value&0x01) in[bit>>3]|=1<<(bit&7); else in[bit>>3]&=0xff-(1<<(bit&7));
+  bit+=step; if (bit>=thresh) bit-=thresh;
+  if (value&0x02) in[bit>>3]|=1<<(bit&7); else in[bit>>3]&=0xff-(1<<(bit&7));
+  bit+=step; if (bit>=thresh) bit-=thresh;
+  if (value&0x04) in[bit>>3]|=1<<(bit&7); else in[bit>>3]&=0xff-(1<<(bit&7));
+  bit+=step; if (bit>=thresh) bit-=thresh;
+  if (value&0x08) in[bit>>3]|=1<<(bit&7); else in[bit>>3]&=0xff-(1<<(bit&7));
+  bit+=step; if (bit>=thresh) bit-=thresh;
+  if (value&0x10) in[bit>>3]|=1<<(bit&7); else in[bit>>3]&=0xff-(1<<(bit&7));
+  bit+=step; if (bit>=thresh) bit-=thresh;
+  if (value&0x20) in[bit>>3]|=1<<(bit&7); else in[bit>>3]&=0xff-(1<<(bit&7));
+  bit+=step; if (bit>=thresh) bit-=thresh;
+  if (value&0x40) in[bit>>3]|=1<<(bit&7); else in[bit>>3]&=0xff-(1<<(bit&7));
+  bit+=step; if (bit>=thresh) bit-=thresh;
+  if (value&0x80) in[bit>>3]|=1<<(bit&7); else in[bit>>3]&=0xff-(1<<(bit&7));
+#else
   interleave_setbit(interleave_data_size,in,index*8+0,(value>>0)&1);
   interleave_setbit(interleave_data_size,in,index*8+1,(value>>1)&1);
   interleave_setbit(interleave_data_size,in,index*8+2,(value>>2)&1);
@@ -305,6 +326,7 @@ void interleave_setbyte(__xdata uint8_t * __pdata in,
   interleave_setbit(interleave_data_size,in,index*8+5,(value>>5)&1);
   interleave_setbit(interleave_data_size,in,index*8+6,(value>>6)&1);
   interleave_setbit(interleave_data_size,in,index*8+7,(value>>7)&1);
+#endif
 }
 
 #else
