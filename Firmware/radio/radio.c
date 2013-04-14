@@ -112,8 +112,7 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __xdata buf)
 
 	if (!feature_golay) {
 		// simple unencoded packets
-		// PGS20130409: This seems to indicate that if golay is disabled, so is
-		// the netid code.
+		// When golay encoding is disabled, the netid is in the packet headers.
 		*length = receive_packet_length;
 		memcpy(buf, radio_buffer, receive_packet_length);
 		radio_receiver_on();
