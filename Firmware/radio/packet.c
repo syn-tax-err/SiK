@@ -1,6 +1,7 @@
 // -*- Mode: C; c-basic-offset: 8; -*-
 //
 // Copyright (c) 2012 Andrew Tridgell, All Rights Reserved
+// Copyright (c) 2013 Paul Gardner-Stephen, All Rights Reserved
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -178,6 +179,12 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 	// No urgent packet, so instead send a packet from the TX buffer if
 	// there is one waiting.
 	last_sent_is_injected = false;
+
+	// Previously this was much more complex, now we only allow
+	// popping exactly one packet from the tx buffer.
+	// The packet format is <0xfe> <length> <sequence> <data>*length
+	// Other data is silently ignored, but may in future be used to
+	// perform other functions, such as query radio and link state.
 
 	slen = serial_read_available();
 	if (force_resend ||
