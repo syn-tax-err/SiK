@@ -146,11 +146,17 @@ uint8_t mavlink_frame(uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 
 
 // return the next packet to be sent
+// In packet-only operation we want only to handle mavlink-inspired
+// packets.  Bytes until a mavlink start character will be discarded
+// (or later may be interpretted with special meaning), and exactly
+// one mavlink-inspired packet will be pulled from the TX queue and
+// dispatched, even if more than one would fit.
 uint8_t
 packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 {
 	register uint16_t slen;
 
+	// Check if there is an urgent packet that has been scheduled
 	if (injected_packet) {
 		// send a previously injected packet
 		slen = last_sent_len;
@@ -168,6 +174,9 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 		last_sent_is_injected = true;
 		return last_sent_len;
 	}
+
+	// No urgent packet, so instead send a packet from the TX buffer if
+	// there is one waiting.
 	last_sent_is_injected = false;
 
 	slen = serial_read_available();
@@ -375,6 +384,8 @@ packet_is_duplicate(uint8_t len, __xdata uint8_t * __pdata buf, bool is_resend)
 }
 
 // inject a packet to send when possible
+// This is used for sending urgent packets ahead of the contents of
+// the tx buffer.
 void 
 packet_inject(__xdata uint8_t * __pdata buf, __pdata uint8_t len)
 {
