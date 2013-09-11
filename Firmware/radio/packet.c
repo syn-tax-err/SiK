@@ -97,7 +97,7 @@ static void check_heartbeat(__xdata uint8_t * __pdata buf)
 // return a complete MAVLink frame, possibly expanding
 // to include other complete frames that fit in the max_xmit limit
 static 
-uint8_t mavlink_frame(uint8_t max_xmit, __xdata uint8_t * __pdata buf)
+uint8_t packet_frame(uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 {
 	__data uint16_t slen;
 
@@ -201,51 +201,35 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 
 	while (slen > 0) {
 		register uint8_t c = serial_peek();
-		if (c == MAVLINK09_STX || c == MAVLINK10_STX) {
-			if (slen == 1) {
-				// we got a bare MAVLink header byte
-				if (last_sent_len == 0) {
-					// wait for the next byte to
-					// give us the length
-					mav_pkt_len = 1;
-					mav_pkt_start_time = timer2_tick();
-					mav_pkt_max_time = serial_rate;
-					return 0;
-				}
-				break;
-			}
-			mav_pkt_len = serial_peek2();
-			if (mav_pkt_len >= 255-8 ||
-			    mav_pkt_len+8 > mav_max_xmit) {
-				// its too big for us to cope with
-				mav_pkt_len = 0;
-				last_sent[last_sent_len++] = serial_read();
-				slen--;				
-				continue;
-			}
+		if (c != 0xfe) {
+			// unrecognised command byte -- ignore
+			serial_read();
+		} else {
+			// Packet start byte found -- see if we have the whole
+			// packet ready
 
-			// the length byte doesn't include
-			// the header or CRC
-			mav_pkt_len += 8;
-			
-			if (last_sent_len != 0) {
-				// send what we've got so far,
-				// and send the MAVLink payload
-				// in the next packet
-				memcpy(buf, last_sent, last_sent_len);
-				mav_pkt_start_time = timer2_tick();
-				mav_pkt_max_time = mav_pkt_len * serial_rate;
-				return last_sent_len;
-			} else if (mav_pkt_len > slen) {
-				// the whole MAVLink packet isn't in
-				// the serial buffer yet. 
-				mav_pkt_start_time = timer2_tick();
-				mav_pkt_max_time = mav_pkt_len * serial_rate;
-				return 0;					
-			} else {
-				// the whole packet is there
-				// and ready to be read
-				return mavlink_frame(max_xmit, buf);
+			// If there is only one byte, we can't determine the packet
+			// length, so just return.
+			if (slen == 1) return 0;
+			// Get the length so that we can see if we have the whole packet
+			// ready for sending
+			mav_pkt_len = serial_peek2();
+			// Check that we do indeed have the whole packet ready for sending
+			if (slen<=1+1+mav_pkt_len) 
+				// We are still waiting on bytes, so return now
+				return 0;
+
+			// At this point we know that we have the whole packet ready
+			// and waiting.
+			// We can now finally read the two header bytes and discard them.
+			serial_read(); // 0xfe header byte
+			serial_read(); // length byte
+
+			// Now dispatch the packet.
+			// This function reads the data from the tx buffer,
+			// and passes it to the radio.
+			// It takes mav_pkt_len as the number of bytes to send.
+			return packet_frame(max_xmit, buf);
 			}
 		} else {
 			last_sent[last_sent_len++] = serial_read();
