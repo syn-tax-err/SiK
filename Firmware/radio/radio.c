@@ -459,7 +459,7 @@ radio_transmit(uint8_t length, __xdata uint8_t * __pdata buf, __pdata uint16_t t
 #ifdef _BOARD_RFD900A
 	PA_ENABLE = 1;		// Set PA_Enable to turn on PA prior to TX cycle
 #endif
-	
+	// all packets are transmitted simple, but with the header golay protected
 	ret = radio_transmit_simple(length, buf, timeout_ticks);
 	#ifdef _BOARD_RFD900A
 	PA_ENABLE = 0;		// Set PA_Enable to off the PA after TX cycle
