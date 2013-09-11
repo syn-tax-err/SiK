@@ -462,6 +462,37 @@ radio_transmit_golay(uint8_t length, __xdata uint8_t * __pdata buf, __pdata uint
 	return radio_transmit_simple(elen, radio_buffer, timeout_ticks);
 }
 
+// Transmit a packet with the header golay protected, and the body plain text.
+// This is used in the simple packet mode where we assume that the body FEC
+// is handled by the software talking to the RFD900 module.
+static bool
+radio_transmit_packet(uint8_t length, __xdata uint8_t * __pdata buf, __pdata uint16_t timeout_ticks)
+{
+	__xdata uint8_t gin[3];
+	__data uint8_t elen;
+
+	if (length > (sizeof(radio_buffer)-(2*3))) {
+		debug("golay packet size %u\n", (unsigned)length);
+		panic("oversized golay packet");		
+	}
+
+	// encoded length
+	elen = (2*3)+length;
+
+	// start of packet is network ID and packet length
+	gin[0] = netid[0];
+	gin[1] = netid[1];
+	gin[2] = length;
+
+	// golay encode the header
+	golay_encode(3, gin, radio_buffer);
+
+	// golay encode the CRC
+	memcpy(&radio_buffer[6],buf,length);
+
+	return radio_transmit_simple(elen, radio_buffer, timeout_ticks);
+}
+
 // start transmitting a packet from the transmit FIFO
 //
 // @param length		number of data bytes to send
