@@ -199,58 +199,6 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 		return 0;
 	}
 
-	if (!feature_mavlink_framing) {
-		// simple framing
-		if (slen > 0 && serial_read_buf(buf, slen)) {
-			memcpy(last_sent, buf, slen);
-			last_sent_len = slen;
-		} else {
-			last_sent_len = 0;
-		}
-		return last_sent_len;
-	}
-
-	// try to align packet boundaries with MAVLink packets
-
-	if (mav_pkt_len == 1) {
-		// we're waiting for the MAVLink length byte
-		if (slen == 1) {
-			if ((uint16_t)(timer2_tick() - mav_pkt_start_time) > mav_pkt_max_time) {
-				// we didn't get the length byte in time
-				last_sent[last_sent_len++] = serial_read();
-				memcpy(buf, last_sent, last_sent_len);				
-				mav_pkt_len = 0;
-				return last_sent_len;
-			}
-			// still waiting ....
-			return 0;
-		}
-		// we have more than one byte, use normal packet frame
-		// detection below
-		mav_pkt_len = 0;
-	}
-
-
-	if (mav_pkt_len != 0) {
-		if (slen < mav_pkt_len) {
-			if ((uint16_t)(timer2_tick() - mav_pkt_start_time) > mav_pkt_max_time) {
-				// timeout waiting for the rest of
-				// it. Send what we have now.
-				serial_read_buf(last_sent, slen);
-				last_sent_len = slen;
-				memcpy(buf, last_sent, last_sent_len);
-				mav_pkt_len = 0;
-				return last_sent_len;
-			}
-			// leave it in the serial buffer till we have the
-			// whole MAVLink packet			
-			return 0;
-		}
-		
-		// the whole of the MAVLink packet is available
-		return mavlink_frame(max_xmit, buf);
-	}
-		
 	while (slen > 0) {
 		register uint8_t c = serial_peek();
 		if (c == MAVLINK09_STX || c == MAVLINK10_STX) {
