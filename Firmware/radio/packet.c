@@ -97,10 +97,8 @@ static void check_heartbeat(__xdata uint8_t * __pdata buf)
 // return a complete MAVLink frame, possibly expanding
 // to include other complete frames that fit in the max_xmit limit
 static 
-uint8_t packet_frame(uint8_t max_xmit, __xdata uint8_t * __pdata buf)
+uint8_t packet_frame(__xdata uint8_t * __pdata buf)
 {
-	__data uint16_t slen;
-
 	serial_read_buf(last_sent, mav_pkt_len);
 	last_sent_len = mav_pkt_len;
 	memcpy(buf, last_sent, last_sent_len);
@@ -152,6 +150,7 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 
 	// if we have received something via serial see how
 	// much of it we could fit in the transmit FIFO
+	slen = serial_read_available();
 	if (slen > max_xmit) {
 		slen = max_xmit;
 	}
@@ -193,7 +192,7 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 			// This function reads the data from the tx buffer,
 			// and populates the radio transmit buffer.
 			// It takes mav_pkt_len as the number of bytes to send.
-			return packet_frame(max_xmit, buf);
+			return packet_frame(buf);
 			}
 		slen--;
 	}
