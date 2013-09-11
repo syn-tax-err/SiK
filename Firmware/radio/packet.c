@@ -195,14 +195,11 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 			// It takes mav_pkt_len as the number of bytes to send.
 			return packet_frame(max_xmit, buf);
 			}
-		} else {
-			last_sent[last_sent_len++] = serial_read();
-			slen--;
-		}
+		slen--;
 	}
-
-	memcpy(buf, last_sent, last_sent_len);
-	return last_sent_len;
+	
+	// If no whole packet to send, then send nothing
+	return 0;
 }
 
 // return true if the packet currently being sent
