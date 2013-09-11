@@ -77,7 +77,6 @@ bool
 radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 {
 	__xdata uint8_t gout[3];
-	__data uint16_t crc1, crc2;
 	__data uint8_t errcount = 0;
 	__data uint8_t elen;
 
@@ -98,13 +97,8 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 	}
 #endif
 
-	if (!feature_golay) {
-		// simple unencoded packets
-		*length = receive_packet_length;
-		memcpy(buf, radio_buffer, receive_packet_length);
-		radio_receiver_on();
-		return true;
-	}
+	// All packets now have a 6-byte (3*2) golay header, and raw body.
+	// this means a single code path for receiving all packets
 
 	// decode it in the callers buffer. This relies on the
 	// in-place decode properties of the golay code. Decoding in
@@ -116,7 +110,7 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 	elen = receive_packet_length;
 	radio_receiver_on();	
 
-	if (elen < 12 || (elen%6) != 0) {
+	if (elen < 6 ) {
 		// not a valid length
 		debug("rx len invalid %u\n", (unsigned)elen);
 		goto failed;
@@ -133,34 +127,18 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 		goto failed;
 	}
 
-	if (6*((gout[2]+2)/3+2) != elen) {
+	// Make sure the length matches
+	if (gout[2]+6 != elen) {
 		debug("rx len mismatch1 %u %u\n",
 		       (unsigned)gout[2],
 		       (unsigned)elen);		
 		goto failed;
 	}
 
-	// decode the CRC
-	errcount += golay_decode(6, &buf[6], gout);
-	crc1 = gout[0] | (((uint16_t)gout[1])<<8);
-
-	if (elen != 12) {
-		errcount += golay_decode(elen-12, &buf[12], buf);
-	}
-
 	*length = gout[2];
 
-	crc2 = crc16(*length, buf);
-
-	if (crc1 != crc2) {
-		debug("crc1=%x crc2=%x len=%u [%x %x]\n",
-		       (unsigned)crc1, 
-		       (unsigned)crc2, 
-		       (unsigned)*length,
-		       (unsigned)buf[0],
-		       (unsigned)buf[1]);
-		goto failed;
-	}
+	// Packet is all fine. Shuffle down over the 6 header bytes.
+	memcpy(buf,&buf[6],*length);
 
 	if (errcount != 0) {
 		if ((uint16_t)(0xFFFF - errcount) > errors.corrected_errors) {
@@ -171,7 +149,7 @@ radio_receive_packet(uint8_t *length, __xdata uint8_t * __pdata buf)
 		if (errors.corrected_packets != 0xFFFF) {
 			errors.corrected_packets++;
 		}
-	}
+	}	
 
 	return true;
 
