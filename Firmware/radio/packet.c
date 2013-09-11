@@ -71,25 +71,6 @@ bool using_mavlink_10;
 #define MAVLINK09_STX 85 // 'U'
 #define MAVLINK10_STX 254
 
-// check if a buffer looks like a MAVLink heartbeat packet - this
-// is used to determine if we will inject RADIO status MAVLink
-// messages into the serial stream for ground station and aircraft
-// monitoring of link quality
-static void check_heartbeat(__xdata uint8_t * __pdata buf)
-{
-	if (buf[0] == MAVLINK09_STX &&
-	    buf[1] == 3 && buf[5] == 0) {
-		// looks like a MAVLink 0.9 heartbeat
-		using_mavlink_10 = false;
-		seen_mavlink = true;
-	} else if (buf[0] == MAVLINK10_STX &&
-		   buf[1] == 9 && buf[5] == 0) {
-		// looks like a MAVLink 1.0 heartbeat
-		using_mavlink_10 = true;
-		seen_mavlink = true;
-	}
-}
-
 // return a complete MAVLink frame, possibly expanding
 // to include other complete frames that fit in the max_xmit limit
 static 
