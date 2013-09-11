@@ -186,23 +186,6 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 	// Other data is silently ignored, but may in future be used to
 	// perform other functions, such as query radio and link state.
 
-	slen = serial_read_available();
-	if (force_resend ||
-	    (feature_opportunistic_resend &&
-	     last_sent_is_resend == false && 
-	     last_sent_len != 0 && 
-	     slen < PACKET_RESEND_THRESHOLD)) {
-		if (max_xmit < last_sent_len) {
-			return 0;
-		}
-		last_sent_is_resend = true;
-		force_resend = false;
-		memcpy(buf, last_sent, last_sent_len);
-		return last_sent_len;
-	}
-
-	last_sent_is_resend = false;
-
 	// if we have received something via serial see how
 	// much of it we could fit in the transmit FIFO
 	if (slen > max_xmit) {
