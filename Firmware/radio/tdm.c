@@ -437,33 +437,12 @@ tdm_remote_at(void)
 static void
 handle_at_command(__pdata uint8_t len)
 {
-	if (len < 2 || len > AT_CMD_MAXLEN || 
-	    pbuf[0] != (uint8_t)'R' || 
-	    pbuf[1] != (uint8_t)'T') {
-		// assume its an AT command reply
-		register uint8_t i;
-		for (i=0; i<len; i++) {
-			putchar(pbuf[i]);
-		}
-		return;
+	// its an AT command reply
+	register uint8_t i;
+	for (i=0; i<len; i++) {
+		putchar(pbuf[i]);
 	}
-
-	// setup the command in the at_cmd buffer
-	memcpy(at_cmd, pbuf, len);
-	at_cmd[len] = 0;
-	at_cmd[0] = 'A'; // replace 'R'
-	at_cmd_len = len;
-	at_cmd_ready = true;
-
-	// run the AT command, capturing any output to the packet
-	// buffer
-	// this reply buffer will be sent at the next opportunity
-	printf_start_capture(pbuf, sizeof(pbuf));
-	at_command();
-	len = printf_end_capture();
-	if (len > 0) {
-		packet_inject(pbuf, len);
-	}
+	return;
 }
 
 // a stack carary to detect a stack overflow
@@ -552,7 +531,9 @@ tdm_serial_loop(void)
 				last_t = tnow;
 
 				if (trailer.command == 1) {
-					handle_at_command(len);
+					// remote AT commands not supported in this
+					// firmware
+					// handle_at_command(len);
 				} else if (len != 0 && 
 					   !packet_is_duplicate(len, pbuf, trailer.resend) &&
 					   !at_mode_active) {
@@ -669,7 +650,7 @@ tdm_serial_loop(void)
 		} else {
 			// get a packet from the serial port
 			len = packet_get_next(max_xmit, pbuf);
-			trailer.command = packet_is_injected();
+			trailer.command = 0; // was changed for injected/non-injected packets
 		}
 
 		if (len > max_data_packet_length) {

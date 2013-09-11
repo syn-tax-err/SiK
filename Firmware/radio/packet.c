@@ -39,7 +39,6 @@
 #include "timer.h"
 
 static __bit last_sent_is_resend;
-static __bit last_sent_is_injected;
 static __bit last_recv_is_resend;
 static __bit force_resend;
 
@@ -62,9 +61,6 @@ static __pdata uint16_t mav_pkt_start_time;
 static __pdata uint16_t mav_pkt_max_time;
 
 static __pdata uint8_t mav_max_xmit;
-
-// true if we have a injected packet to send
-static bool injected_packet;
 
 // have we seen a mavlink packet?
 bool seen_mavlink;
@@ -119,28 +115,7 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 {
 	register uint16_t slen;
 
-	// Check if there is an urgent packet that has been scheduled
-	if (injected_packet) {
-		// send a previously injected packet
-		slen = last_sent_len;
-		if (max_xmit < slen) {
-			// send as much as we can
-			memcpy(buf, last_sent, max_xmit);
-			memcpy(last_sent, &last_sent[max_xmit], slen - max_xmit);
-			last_sent_len = slen - max_xmit;
-			last_sent_is_injected = true;
-			return max_xmit;
-		}
-		// send the rest
-		memcpy(buf, last_sent, last_sent_len);
-		injected_packet = false;
-		last_sent_is_injected = true;
-		return last_sent_len;
-	}
-
-	// No urgent packet, so instead send a packet from the TX buffer if
-	// there is one waiting.
-	last_sent_is_injected = false;
+	// Send a packet from the TX buffer if there is one waiting.
 
 	// Previously this was much more complex, now we only allow
 	// popping exactly one packet from the tx buffer.
@@ -209,14 +184,6 @@ packet_is_resend(void)
 	return last_sent_is_resend;
 }
 
-// return true if the packet currently being sent
-// is an injected packet
-bool 
-packet_is_injected(void)
-{
-	return last_sent_is_injected;
-}
-
 // force the last packet to be resent. Used when transmit fails
 void
 packet_force_resend(void)
@@ -263,19 +230,4 @@ packet_is_duplicate(uint8_t len, __xdata uint8_t * __pdata buf, bool is_resend)
 #endif
 	last_recv_is_resend = true;
 	return false;
-}
-
-// inject a packet to send when possible
-// This is used for sending urgent packets ahead of the contents of
-// the tx buffer.
-void 
-packet_inject(__xdata uint8_t * __pdata buf, __pdata uint8_t len)
-{
-	if (len > sizeof(last_sent)) {
-		len = sizeof(last_sent);
-	}
-	memcpy(last_sent, buf, len);
-	last_sent_len = len;
-	last_sent_is_resend = false;
-	injected_packet = true;
 }

@@ -40,11 +40,6 @@ extern uint8_t packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pd
 /// @return			true is a resend
 extern bool packet_is_resend(void);
 
-/// return true if the last packet was a injected packet
-///
-/// @return			true is injected
-extern bool packet_is_injected(void);
-
 /// determine if a received packet is a duplicate
 ///
 /// @return			true if this is a duplicate
@@ -63,10 +58,4 @@ extern void packet_set_max_xmit(uint8_t max);
 /// @param  speed		serial speed bytes/s
 ///
 extern void packet_set_serial_speed(uint16_t speed);
-
-/// inject a packet to be sent when possible
-/// @param buf			buffer to send
-/// @param len			number of bytes
-///			
-extern void packet_inject(__xdata uint8_t * __pdata buf, __pdata uint8_t len);
 
