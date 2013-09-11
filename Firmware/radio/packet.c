@@ -106,42 +106,6 @@ uint8_t packet_frame(uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 	memcpy(buf, last_sent, last_sent_len);
 	mav_pkt_len = 0;
 
-	check_heartbeat(buf);
-
-	slen = serial_read_available();
-
-	// see if we have more complete MAVLink frames in the serial
-	// buffer that we can fit in this packet
-	while (slen >= 8) {
-		register uint8_t c = serial_peek();
-		if (c != MAVLINK09_STX && c != MAVLINK10_STX) {
-			// its not a MAVLink packet
-			return last_sent_len;			
-		}
-		c = serial_peek2();
-		if (c >= 255 - 8 || 
-		    c+8 > max_xmit - last_sent_len) {
-			// it won't fit
-			break;
-		}
-		if (c+8 > slen) {
-			// we don't have the full MAVLink packet in
-			// the serial buffer
-			break;
-		}
-
-		c += 8;
-
-		// we can add another MAVLink frame to the packet
-		serial_read_buf(&last_sent[last_sent_len], c);
-		memcpy(&buf[last_sent_len], &last_sent[last_sent_len], c);
-
-		check_heartbeat(buf+last_sent_len);
-
-		last_sent_len += c;
-		slen -= c;
-	}
-
 	return last_sent_len;
 }
 
@@ -227,7 +191,7 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 
 			// Now dispatch the packet.
 			// This function reads the data from the tx buffer,
-			// and passes it to the radio.
+			// and populates the radio transmit buffer.
 			// It takes mav_pkt_len as the number of bytes to send.
 			return packet_frame(max_xmit, buf);
 			}
