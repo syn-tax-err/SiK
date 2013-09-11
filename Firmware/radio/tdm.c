@@ -640,18 +640,9 @@ tdm_serial_loop(void)
 		}
 
 		// ask the packet system for the next packet to send
-		if (send_at_command && 
-		    max_xmit >= strlen(remote_at_cmd)) {
-			// send a remote AT command
-			len = strlen(remote_at_cmd);
-			memcpy(pbuf, remote_at_cmd, len);
-			trailer.command = 1;
-			send_at_command = false;
-		} else {
-			// get a packet from the serial port
-			len = packet_get_next(max_xmit, pbuf);
-			trailer.command = 0; // was changed for injected/non-injected packets
-		}
+		// get a packet from the serial port
+		len = packet_get_next(max_xmit, pbuf);
+		trailer.command = 0; // was changed for injected/non-injected packets		
 
 		if (len > max_data_packet_length) {
 			panic("oversized tdm packet");

@@ -411,57 +411,6 @@ radio_transmit_simple(__data uint8_t length, __xdata uint8_t * __pdata buf, __pd
 	return false;
 }
 
-
-// start transmitting a packet from the transmit FIFO
-//
-// @param length		number of data bytes to send
-// @param timeout_ticks		number of 16usec RTC ticks to allow
-//				for the send
-//
-// @return	    true if packet sent successfully
-//
-static bool
-radio_transmit_golay(uint8_t length, __xdata uint8_t * __pdata buf, __pdata uint16_t timeout_ticks)
-{
-	__pdata uint16_t crc;
-	__xdata uint8_t gin[3];
-	__data uint8_t elen, rlen;
-
-	if (length > (sizeof(radio_buffer)/2)-6) {
-		debug("golay packet size %u\n", (unsigned)length);
-		panic("oversized golay packet");		
-	}
-
-	// rounded length
-	rlen = ((length+2)/3)*3;
-
-	// encoded length
-	elen = (rlen+6)*2;
-
-	// start of packet is network ID and packet length
-	gin[0] = netid[0];
-	gin[1] = netid[1];
-	gin[2] = length;
-
-	// golay encode the header
-	golay_encode(3, gin, radio_buffer);
-
-	// next add a CRC, we round to 3 bytes for simplicity, adding 
-	// another copy of the length in the spare byte
-	crc = crc16(length, buf);
-	gin[0] = crc&0xFF;
-	gin[1] = crc>>8;
-	gin[2] = length;
-
-	// golay encode the CRC
-	golay_encode(3, gin, &radio_buffer[6]);
-
-	// encode the rest of the payload
-	golay_encode(rlen, buf, &radio_buffer[12]);
-
-	return radio_transmit_simple(elen, radio_buffer, timeout_ticks);
-}
-
 // Transmit a packet with the header golay protected, and the body plain text.
 // This is used in the simple packet mode where we assume that the body FEC
 // is handled by the software talking to the RFD900 module.
@@ -511,12 +460,8 @@ radio_transmit(uint8_t length, __xdata uint8_t * __pdata buf, __pdata uint16_t t
 	PA_ENABLE = 1;		// Set PA_Enable to turn on PA prior to TX cycle
 #endif
 	
-	if (!feature_golay) {
-		ret = radio_transmit_simple(length, buf, timeout_ticks);
-	} else {
-		ret = radio_transmit_golay(length, buf, timeout_ticks);
-	}
-#ifdef _BOARD_RFD900A
+	ret = radio_transmit_simple(length, buf, timeout_ticks);
+	#ifdef _BOARD_RFD900A
 	PA_ENABLE = 0;		// Set PA_Enable to off the PA after TX cycle
 #endif
 	EX0_RESTORE;
