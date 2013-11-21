@@ -31,7 +31,7 @@
 ///
 /// Storage for program parameters.
 ///
-/// Parameters are held in a contiguous array of 16-bit values.
+/// Parameters are held in a contiguous array of 32-bit values.
 /// It is up to the caller to decide how large a parameter is and to
 /// access it accordingly.
 ///
@@ -51,16 +51,16 @@ __code const struct parameter_info {
 	param_t		default_value;
 } parameter_info[PARAM_MAX] = {
 	{"FORMAT", 		PARAM_FORMAT_CURRENT},
-	{"SERIAL_SPEED",	57}, // match APM default of 57600
-	{"AIR_SPEED",		64}, // relies on MAVLink flow control
-	{"NETID",		25},
-	{"TXPOWER",		0},
-	{"ECC",			1},
-	{"MAVLINK",		1},
+	{"SERIAL_SPEED",	115}, // match Serval Mesh Extender default
+	{"AIR_SPEED",		128}, // match Serval Mesh Extender default 
+	{"NETID",		0x4101},  // Mesh Extender channel 1 = 0x4101, channel 255 = 0x41FF
+	{"TXPOWER",		24},  // 250mW TX power = 1W power consumed - reasonable maximum for battery powered Mesh Extenders
+	{"ECC",			1},   // match Serval Mesh Extender default
+	{"MAVLINK",		0},   // match Serval Mesh Extender default
 	{"OPPRESEND",		1},
-	{"MIN_FREQ",		0},
-	{"MAX_FREQ",		0},
-	{"NUM_CHANNELS",	0},
+	{"MIN_FREQ",		915000}, // OK for AU,US,CA, but NOT NZ or others
+	{"MAX_FREQ",		928000}, // OK for AU,US,CA, but NOT NZ or others
+	{"NUM_CHANNELS",	50},     // OK for AU,US,CA,NZ
 	{"DUTY_CYCLE",		100},
 	{"LBT_RSSI",		0},
 	{"MANCHESTER",		0},
