@@ -48,8 +48,12 @@
 enum tdm_state { TDM_TRANSMIT=0, TDM_SILENCE1=1, TDM_RECEIVE=2, TDM_SILENCE2=3 };
 __pdata static enum tdm_state tdm_state;
 
+#define MAX_HEADER_LENGTH 8
+
 /// a packet buffer for the TDM code
 __xdata uint8_t	pbuf[MAX_PACKET_LENGTH];
+/// a packet announcement buffer for the TDM code
+__xdata uint8_t	hbuf[MAX_HEADER_LENGTH];
 
 /// how many 16usec ticks are remaining in the current state
 __pdata static uint16_t tdm_state_remaining;
@@ -560,6 +564,22 @@ tdm_serial_loop(void)
 					// the serial port
 					//printf("rcv(%d,[", len);
 					LED_ACTIVITY = LED_ON;
+					
+					// Indicate radio frame here
+					hbuf[0]=0xaa;
+					hbuf[1]=0x55;
+					// RSSI of frame
+					hbuf[2]=radio_last_rssi();
+					// Radio temperature		
+					hbuf[3]=radio_temperature();
+					// length of frame
+					hbuf[4]=len;
+					// Trailer window
+					hbuf[5]=trailer.window&0xff;
+					hbuf[6]=trailer.window>>8;
+					hbuf[7]=0x55;
+					serial_write_buf(hbuf, 7+1);
+
 					serial_write_buf(pbuf, len);
 					LED_ACTIVITY = LED_OFF;
 					//printf("]\n");
