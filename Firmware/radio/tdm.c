@@ -48,7 +48,7 @@
 enum tdm_state { TDM_TRANSMIT=0, TDM_SILENCE1=1, TDM_RECEIVE=2, TDM_SILENCE2=3 };
 __pdata static enum tdm_state tdm_state;
 
-#define MAX_HEADER_LENGTH 8
+#define MAX_HEADER_LENGTH 9
 
 /// a packet buffer for the TDM code
 __xdata uint8_t	pbuf[MAX_PACKET_LENGTH];
@@ -558,21 +558,24 @@ tdm_serial_loop(void)
 				if (trailer.command == 1) {
 					handle_at_command(len);
 				} else {						
-					// Indicate radio frame here, even if frame is empty.
-					hbuf[0]=0xaa;
-					hbuf[1]=0x55;
-					// RSSI of frame
-					hbuf[2]=radio_last_rssi();
-					// Radio temperature		
-					hbuf[3]=radio_temperature();
-					// length of frame
-					hbuf[4]=len;
-					// RX buffer space
-					hbuf[5]=serial_read_available()&0xff;
-					hbuf[6]=serial_read_available()>>8;
-					hbuf[7]=0x55;
-					serial_write_buf(hbuf, 7+1);
-
+					if (!at_mode_active) {
+						// Indicate radio frame here, even if frame is empty.
+						hbuf[0]=0xaa;
+						hbuf[1]=0x55;
+						// RSSI of THIS frame
+						hbuf[2]=radio_last_rssi();
+						// Remove average RSSI
+						hbuf[3]=remote_statistics.average_rssi;
+						// Radio temperature		
+						hbuf[4]=radio_temperature();
+						// length of frame
+						hbuf[5]=len;
+						// RX buffer space
+						hbuf[6]=serial_read_available()&0xff;
+						hbuf[7]=serial_read_available()>>8;
+						hbuf[8]=0x55;
+						serial_write_buf(hbuf, 8+1);
+					}
 					if (len != 0 && 
 					    !packet_is_duplicate(len, pbuf, trailer.resend) &&
 					    !at_mode_active) {
