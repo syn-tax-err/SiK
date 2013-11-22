@@ -557,15 +557,8 @@ tdm_serial_loop(void)
 
 				if (trailer.command == 1) {
 					handle_at_command(len);
-				} else if (len != 0 && 
-					   !packet_is_duplicate(len, pbuf, trailer.resend) &&
-					   !at_mode_active) {
-					// its user data - send it out
-					// the serial port
-					//printf("rcv(%d,[", len);
-					LED_ACTIVITY = LED_ON;
-					
-					// Indicate radio frame here
+				} else {						
+					// Indicate radio frame here, even if frame is empty.
 					hbuf[0]=0xaa;
 					hbuf[1]=0x55;
 					// RSSI of frame
@@ -580,9 +573,18 @@ tdm_serial_loop(void)
 					hbuf[7]=0x55;
 					serial_write_buf(hbuf, 7+1);
 
-					serial_write_buf(pbuf, len);
-					LED_ACTIVITY = LED_OFF;
-					//printf("]\n");
+					if (len != 0 && 
+					    !packet_is_duplicate(len, pbuf, trailer.resend) &&
+					    !at_mode_active) {
+						// its user data - send it out
+						// the serial port
+						//printf("rcv(%d,[", len);
+						LED_ACTIVITY = LED_ON;
+						
+						serial_write_buf(pbuf, len);
+						LED_ACTIVITY = LED_OFF;
+						//printf("]\n");
+					}
 				}
 			}
 			continue;
