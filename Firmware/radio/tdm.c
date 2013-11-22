@@ -574,9 +574,9 @@ tdm_serial_loop(void)
 					hbuf[3]=radio_temperature();
 					// length of frame
 					hbuf[4]=len;
-					// Trailer window
-					hbuf[5]=trailer.window&0xff;
-					hbuf[6]=trailer.window>>8;
+					// RX buffer space
+					hbuf[5]=serial_read_available()&0xff;
+					hbuf[6]=serial_read_available()>>8;
 					hbuf[7]=0x55;
 					serial_write_buf(hbuf, 7+1);
 
