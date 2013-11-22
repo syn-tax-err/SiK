@@ -51,7 +51,7 @@ __code const struct parameter_info {
 	param_t		default_value;
 } parameter_info[PARAM_MAX] = {
 	{"FORMAT", 		PARAM_FORMAT_CURRENT},
-	{"SERIAL_SPEED",	115}, // match Serval Mesh Extender default
+	{"SERIAL_SPEED",	230}, // match Serval Mesh Extender default
 	{"AIR_SPEED",		128}, // match Serval Mesh Extender default 
 	{"NETID",		0x4101},  // Mesh Extender channel 1 = 0x4101, channel 255 = 0x41FF
 	{"TXPOWER",		24},  // 250mW TX power = 1W power consumed - reasonable maximum for battery powered Mesh Extenders
