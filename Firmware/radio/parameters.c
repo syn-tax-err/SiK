@@ -56,7 +56,7 @@ __code const struct parameter_info {
 	{"NETID",		0x4101},  // Mesh Extender channel 1 = 0x4101, channel 255 = 0x41FF
 	{"TXPOWER",		24},  // 250mW TX power = 1W power consumed - reasonable maximum for battery powered Mesh Extenders
 	{"ECC",			1},   // match Serval Mesh Extender default
-	{"MAVLINK",		0},   // match Serval Mesh Extender default
+	{"MAVLINK",		1},   // match Serval Mesh Extender default
 	{"OPPRESEND",		1},
 	{"MIN_FREQ",		915000}, // OK for AU,US,CA, but NOT NZ or others
 	{"MAX_FREQ",		928000}, // OK for AU,US,CA, but NOT NZ or others

@@ -37,6 +37,14 @@
 #include "packet.h"
 #include "timer.h"
 
+#define MAVLINK_MSG_ID_X_SERVAL_SETUPRADIO 210
+#define MAVLINK_MSG_ID_X_SERVAL_RESULT 211
+// use 'ME' for Mesh Extender
+#define RADIO_SOURCE_SYSTEM 'M'
+#define RADIO_SOURCE_COMPONENT 'E'
+
+extern __xdata uint8_t pbuf[MAX_PACKET_LENGTH];
+
 static __bit last_sent_is_resend;
 static __bit last_sent_is_injected;
 static __bit last_recv_is_resend;
@@ -90,6 +98,74 @@ static void check_heartbeat(__xdata uint8_t * __pdata buf)
 		// looks like a MAVLink 1.0 heartbeat
 		using_mavlink_10 = true;
 		seen_mavlink = true;
+	} else if (buf[0] == MAVLINK10_STX &&
+		   // 226 is arbitrarily chosen unallocated MAVLink message ID
+		   // used to indicate this set radio parameters command
+		   buf[1] == 26 && buf[5] == MAVLINK_MSG_ID_X_SERVAL_SETUPRADIO &&
+		   // some magic bytes in other MAVLink fields
+		   buf[2] == 0xBE && buf[3] == 0xEF && buf[4] == 0xEE ) {
+		// looks like a Serval Mesh Extender Radio Configure packet
+		// This takes a while to run, and will confuse the TDM, 
+		// but that's okay, because it only needs to happen once.
+		bool reject=false;
+		uint32_t value;
+		// NETID low byte		
+		// NETID high byte		
+		value=(buf[6]<<8)||buf[7];
+		if (param_set(PARAM_NETID,value)) reject=true;
+		// TX power
+		if (param_set(PARAM_TXPOWER,buf[8])) reject=true;
+		// Duty cycle
+		if (param_set(PARAM_DUTY_CYCLE,buf[9])) reject=true;		
+		// ECC enable
+		if (param_set(PARAM_ECC,buf[10])) reject=true;
+		// Air speed
+		if (param_set(PARAM_AIR_SPEED,buf[11])) reject=true;
+		// UART speed
+		if (param_set(PARAM_SERIAL_SPEED,buf[12])) reject=true;
+		// Opportunistic resend
+		if (param_set(PARAM_OPPRESEND,buf[13])) reject=true;
+		// Number of channels
+		if (param_set(PARAM_NUM_CHANNELS,buf[14])) reject=true;
+		// MAVLink enable
+		if (param_set(PARAM_MAVLINK,buf[15])) reject=true;
+		// LBT RSSI
+		if (param_set(PARAM_LBT_RSSI,buf[16])) reject=true;
+		// Manchester encoding
+		if (param_set(PARAM_MANCHESTER,buf[17])) reject=true;
+		// lower frequency
+		value=buf[18]; value=value<<8;
+		value=buf[19]; value=value<<8;
+		value=buf[20]; value=value<<8;
+		value=buf[21]; 
+		if (param_set(PARAM_MIN_FREQ,value)) reject=true;
+		// upper frequency
+		value=buf[22]; value=value<<8;
+		value=buf[23]; value=value<<8;
+		value=buf[24]; value=value<<8;
+		value=buf[25]; 
+		if (param_set(PARAM_MAX_FREQ,value)) reject=true;
+
+		if (!reject) param_save();
+
+		// Send response
+		pbuf[0] = using_mavlink_10?254:'U';
+		pbuf[1] = 2;
+		pbuf[2] = 0xff;
+		pbuf[3] = RADIO_SOURCE_SYSTEM;
+		pbuf[4] = RADIO_SOURCE_COMPONENT;
+		pbuf[5] = MAVLINK_MSG_ID_X_SERVAL_RESULT;
+		
+		pbuf[6]=MAVLINK_MSG_ID_X_SERVAL_SETUPRADIO;
+		pbuf[7]=reject?0xff:0x00;
+		
+		if (serial_write_space() < 6+2+2) {
+			// don't cause an overflow
+			return;
+		}
+		
+		serial_write_buf(pbuf, 6+2+2);			
+
 	}
 }
 
