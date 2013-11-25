@@ -411,6 +411,15 @@ serial_read_space(void)
 	return space;
 }
 
+// return available space in rx buffer as raw bytes
+uint16_t
+serial_read_space_bytes(void)
+{
+	uint16_t space = sizeof(rx_buf) - serial_read_available();
+	return space;
+}
+
+
 void
 putchar(char c) __reentrant
 {

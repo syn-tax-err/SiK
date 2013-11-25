@@ -571,8 +571,8 @@ tdm_serial_loop(void)
 						// length of frame
 						hbuf[5]=len;
 						// RX buffer space
-						hbuf[6]=serial_read_available()&0xff;
-						hbuf[7]=serial_read_available()>>8;
+						hbuf[6]=serial_read_space_bytes()&0xff;
+						hbuf[7]=serial_read_space_bytes()>>8;
 						hbuf[8]=0x55;
 						serial_write_buf(hbuf, 8+1);
 					}
