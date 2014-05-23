@@ -554,31 +554,30 @@ tdm_serial_loop(void)
 				// received header
 				sync_tx_windows(len);
 				last_t = tnow;
-
+				
 				if (trailer.command == 1) {
 					handle_at_command(len);
-				} else {						
-					if (!at_mode_active) {
+				} else {		
+					if (!at_mode_active &&
+					    !packet_is_duplicate(len, pbuf, trailer.resend)) {
 						// Indicate radio frame here, even if frame is empty.
 						hbuf[0]=0xaa;
 						hbuf[1]=0x55;
 						// RSSI of THIS frame
 						hbuf[2]=radio_last_rssi();
-						// Remove average RSSI
+						// Remote average RSSI
 						hbuf[3]=remote_statistics.average_rssi;
 						// Radio temperature		
 						hbuf[4]=radio_temperature();
 						// length of frame
-						hbuf[5]=len;
+						hbuf[5]=len;						
 						// RX buffer space
 						hbuf[6]=serial_read_space_bytes()&0xff;
 						hbuf[7]=serial_read_space_bytes()>>8;
 						hbuf[8]=0x55;
 						serial_write_buf(hbuf, 8+1);
-					}
-					if (len != 0 && 
-					    !packet_is_duplicate(len, pbuf, trailer.resend) &&
-					    !at_mode_active) {
+					
+						if (len != 0) {
 						// its user data - send it out
 						// the serial port
 						//printf("rcv(%d,[", len);
@@ -587,6 +586,7 @@ tdm_serial_loop(void)
 						serial_write_buf(pbuf, len);
 						LED_ACTIVITY = LED_OFF;
 						//printf("]\n");
+						}
 					}
 				}
 			}
