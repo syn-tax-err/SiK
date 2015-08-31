@@ -65,7 +65,7 @@ __code const struct parameter_info {
 	{"ECC",			1},   // match Serval Mesh Extender default
 	{"MAVLINK",		1},   // match Serval Mesh Extender default
 	{"OPPRESEND",		1},
-	{"MIN_FREQ",		922000}, // OK for AU,US,CA, and NZ, but not others
+	{"FREQ",		923000}, // OK for AU,US,CA, and NZ, but not others
 	{"DUTY_CYCLE",		100},
 	{"LBT_RSSI",		0},
 	{"MANCHESTER",		0},
