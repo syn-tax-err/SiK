@@ -54,9 +54,7 @@ enum ParamID {
         PARAM_ECC,			// ECC using golay encoding
 	PARAM_MAVLINK,			// MAVLink framing
 	PARAM_OPPRESEND,		// opportunistic resend
-	PARAM_MIN_FREQ,			// min frequency in MHz
-	PARAM_MAX_FREQ,			// max frequency in MHz
-	PARAM_NUM_CHANNELS,		// number of hopping channels
+	PARAM_MIN_FREQ,			// channel frequency in MHz
 	PARAM_DUTY_CYCLE,		// duty cycle (percentage)
 	PARAM_LBT_RSSI,			// listen before talk threshold
 	PARAM_MANCHESTER,		// enable manchester encoding

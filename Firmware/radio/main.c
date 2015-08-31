@@ -315,7 +315,6 @@ radio_init(void)
 
 	// sanity checks
 	param_set(PARAM_MIN_FREQ, freq_min/1000);
-	param_set(PARAM_NUM_CHANNELS, 1);
 
 	// add another offset based on network ID. This means that
 	// with different network IDs we will have much lower

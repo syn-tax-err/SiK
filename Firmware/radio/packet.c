@@ -125,26 +125,25 @@ static void check_heartbeat(__xdata uint8_t * __pdata buf)
 		if (param_set(PARAM_SERIAL_SPEED,buf[12])) reject=true;
 		// Opportunistic resend
 		if (param_set(PARAM_OPPRESEND,buf[13])) reject=true;
-		// Number of channels
-		if (param_set(PARAM_NUM_CHANNELS,buf[14])) reject=true;
+		// unused (was Number of channels)
+		// if (param_set(PARAM_NUM_CHANNELS,buf[14])) reject=true;
 		// MAVLink enable
 		if (param_set(PARAM_MAVLINK,buf[15])) reject=true;
 		// LBT RSSI
 		if (param_set(PARAM_LBT_RSSI,buf[16])) reject=true;
 		// Manchester encoding
 		if (param_set(PARAM_MANCHESTER,buf[17])) reject=true;
-		// lower frequency
+		// channel frequency
 		value=buf[18]; value=value<<8;
 		value=buf[19]; value=value<<8;
 		value=buf[20]; value=value<<8;
 		value=buf[21]; 
 		if (param_set(PARAM_MIN_FREQ,value)) reject=true;
-		// upper frequency
+		// unused (was upper frequency)
 		value=buf[22]; value=value<<8;
 		value=buf[23]; value=value<<8;
 		value=buf[24]; value=value<<8;
 		value=buf[25]; 
-		if (param_set(PARAM_MAX_FREQ,value)) reject=true;
 
 		if (!reject) param_save();
 

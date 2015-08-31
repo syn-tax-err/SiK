@@ -54,13 +54,18 @@ __code const struct parameter_info {
 	{"SERIAL_SPEED",	230}, // match Serval Mesh Extender default
 	{"AIR_SPEED",		128}, // match Serval Mesh Extender default 
 	{"NETID",		0x4101},  // Mesh Extender channel 1 = 0x4101, channel 255 = 0x41FF
-	{"TXPOWER",		24},  // 250mW TX power = 1W power consumed - reasonable maximum for battery powered Mesh Extenders
+	// XXX: PGS: Limit TX power to 1mW on RFD900, except when operating under our
+	// scientific spectrum license that covers Arkaroola and surrounds where we
+	// are allowed 1W (+30dBm) EIRP.  With a 3dB antenna, this means a practical
+	// limit of 27dB or 250mW.
+	// This will change with the next model of radio from RFDesign, that will have
+	// a wide enough 3dB channel width to qualify as "spread spectrum" under the
+	// Australian LIPD class license Item 45 (or is it Item 52? I need to check.)
+	{"TXPOWER",		1},  // 250mW TX power = 1W power consumed - reasonable maximum for battery powered Mesh Extenders
 	{"ECC",			1},   // match Serval Mesh Extender default
 	{"MAVLINK",		1},   // match Serval Mesh Extender default
 	{"OPPRESEND",		1},
-	{"MIN_FREQ",		915000}, // OK for AU,US,CA, but NOT NZ or others
-	{"MAX_FREQ",		928000}, // OK for AU,US,CA, but NOT NZ or others
-	{"NUM_CHANNELS",	50},     // OK for AU,US,CA,NZ
+	{"MIN_FREQ",		922000}, // OK for AU,US,CA, and NZ, but not others
 	{"DUTY_CYCLE",		100},
 	{"LBT_RSSI",		0},
 	{"MANCHESTER",		0},
