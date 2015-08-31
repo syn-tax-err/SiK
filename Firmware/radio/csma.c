@@ -490,45 +490,51 @@ csma_serial_loop(void)
 			panic("oversized tdm packet");
 		}
 
-		trailer.resend = packet_is_resend();
+		if (len>0) {
+			trailer.resend = packet_is_resend();
 
-		// PGS: Trailer window is meaningless in CSMA mode
-		trailer.window = 0;
+			// PGS: Trailer window is meaningless in CSMA mode
+			trailer.window = 0;
 
-		// set right transmit channel
-		// PGS: Always channel 0 for CSMA
-		radio_set_channel(0);
+			// set right transmit channel
+			// PGS: Always channel 0 for CSMA
+			radio_set_channel(0);
 
-		memcpy(&pbuf[len], &trailer, sizeof(trailer));
+			memcpy(&pbuf[len], &trailer, sizeof(trailer));
 
-		if (len != 0 && trailer.window != 0) {
-			// show the user that we're sending real data
-			LED_ACTIVITY = LED_ON;
-		}
+			if (len != 0 && trailer.window != 0) {
+				// show the user that we're sending real data
+				LED_ACTIVITY = LED_ON;
+			}
 
-		// after sending a packet leave a bit of time before
-		// sending the next one. The receivers don't cope well
-		// with back to back packets
-		transmit_wait = packet_latency;
+			// after sending a packet leave a bit of time before
+			// sending the next one. The receivers don't cope well
+			// with back to back packets
+			transmit_wait = packet_latency;
 
-		// if we're implementing a duty cycle, add the
-		// transmit time to the number of ticks we've been transmitting
-		if ((duty_cycle - duty_cycle_offset) != 100) {
-			transmitted_ticks += flight_time_estimate(len+sizeof(trailer));
-		}
+			// if we're implementing a duty cycle, add the
+			// transmit time to the number of ticks we've been transmitting
+			if ((duty_cycle - duty_cycle_offset) != 100) {
+				transmitted_ticks += flight_time_estimate(len+sizeof(trailer));
+			}
 
-		// start transmitting the packet
-		radio_transmit(len + sizeof(trailer), pbuf, 0 );
+			// start transmitting the packet
+			radio_transmit(len + sizeof(trailer), pbuf, 0 );
 
-		// set right receive channel
-		// PGS: Always channel 0 for CSMA
-		radio_set_channel(0);
+			// PGS DEBUG: Display a character each time we send a packet.
+			hbuf[0]='.';
+			serial_write_buf(hbuf, 1);
 
-		// re-enable the receiver
-		radio_receiver_on();
+			// set right receive channel
+			// PGS: Always channel 0 for CSMA
+			radio_set_channel(0);
 
-		if (len != 0 && trailer.window != 0) {
-			LED_ACTIVITY = LED_OFF;
+			// re-enable the receiver
+			radio_receiver_on();
+
+			if (len != 0 && trailer.window != 0) {
+				LED_ACTIVITY = LED_OFF;
+			}
 		}
 	}
 }
