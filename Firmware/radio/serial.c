@@ -50,14 +50,12 @@ __pdata const uint16_t  rx_mask = sizeof(rx_buf) - 1;
 __pdata const uint16_t  tx_mask = sizeof(tx_buf) - 1;
 
 // TX gate / ! escape state
-static __bit last_was_bang=0;
-static __bit tx_buffered_data=0;
+extern bool last_was_bang=0;
+extern bool tx_buffered_data=0;
 
 // FIFO insert/remove pointers
 static volatile __pdata uint16_t				rx_insert, rx_remove;
 static volatile __pdata uint16_t				tx_insert, tx_remove;
-
-
 
 // flag indicating the transmitter is idle
 static volatile bool			tx_idle;
@@ -124,9 +122,16 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			// inserts a '!' into the serial buffer.
 			if (c=='!') {
 				if (last_was_bang) {
+					if (!tx_buffered_data) putchar('>');
+					else putchar(']');
 					tx_buffered_data=1;
-				} else last_was_bang=1;
-			} else if (c=='.' && last_was_bang ) {
+					last_was_bang=0;
+				} else {
+					putchar('!');
+					last_was_bang=1;
+				}
+			} else if ((c=='.') && last_was_bang ) {
+				putchar('E');
 				last_was_bang=0;
 				// Insert escaped ! into serial RX buffer
 				if (BUF_NOT_FULL(rx)) {

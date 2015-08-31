@@ -63,8 +63,8 @@ __code const struct parameter_info {
 	// Australian LIPD class license Item 45 (or is it Item 52? I need to check.)
 	{"TXPOWER",		1},  // 250mW TX power = 1W power consumed - reasonable maximum for battery powered Mesh Extenders
 	{"ECC",			0},   // match Serval Mesh Extender default
-	{"MAVLINK",		1},   // match Serval Mesh Extender default
-	{"OPPRESEND",		1},
+	{"MAVLINK",		0},   // match Serval Mesh Extender default
+	{"OPPRESEND",		0},   // match Serval Mesh Extender default
 	{"FREQ",		923000}, // OK for AU,US,CA, and NZ, but not others
 	{"DUTY_CYCLE",		100},
 	{"LBT_RSSI",		0},
