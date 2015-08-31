@@ -1,5 +1,6 @@
 // -*- Mode: C; c-basic-offset: 8; -*-
 //
+// Copyright (c) 2015 Serval Project Inc. and Flinders University, All Rights Reserved.
 // Copyright (c) 2012 Andrew Tridgell, All Rights Reserved
 // Copyright (c) 2011 Michael Smith, All Rights Reserved
 //
@@ -30,7 +31,8 @@
 ///
 /// @file	tdm.c
 ///
-/// time division multiplexing code
+/// carrier sense multiple-access code
+/// based on the original time division multiplexing code
 ///
 
 #include <stdarg.h>
@@ -39,14 +41,9 @@
 #include "timer.h"
 #include "packet.h"
 #include "golay.h"
-#include "freq_hopping.h"
 #include "crc.h"
 
 #define USE_TICK_YIELD 1
-
-/// the state of the tdm system
-enum tdm_state { TDM_TRANSMIT=0, TDM_SILENCE1=1, TDM_RECEIVE=2, TDM_SILENCE2=3 };
-__pdata static enum tdm_state tdm_state;
 
 #define MAX_HEADER_LENGTH 9
 
@@ -146,7 +143,7 @@ static __pdata char remote_at_cmd[AT_CMD_MAXLEN + 1];
 /// display RSSI output
 ///
 void
-tdm_show_rssi(void)
+csma_show_rssi(void)
 {
 	printf("L/R RSSI: %u/%u  L/R noise: %u/%u pkts: %u ",
 	       (unsigned)statistics.average_rssi,
@@ -172,7 +169,7 @@ static void
 display_test_output(void)
 {
 	if (test_display & AT_TEST_RSSI) {
-		tdm_show_rssi();
+		csma_show_rssi();
 	}
 }
 
@@ -242,8 +239,6 @@ link_update(void)
 		// PGS: Except that with CSMA, we don't scan, but we still reset statistics
 
 		unlock_count = 5;
-
-		fhop_set_locked(false);
 	}
 
 	if (unlock_count != 0) {
@@ -269,7 +264,7 @@ link_update(void)
 
 // dispatch an AT command to the remote system
 void
-tdm_remote_at(void)
+csma_remote_at(void)
 {
 	memcpy(remote_at_cmd, at_cmd, strlen(at_cmd)+1);
 	send_at_command = true;
@@ -314,7 +309,7 @@ __at(0xFF) uint8_t __idata _canary;
 /// main loop for time division multiplexing transparent serial
 ///
 void
-tdm_serial_loop(void)
+csma_serial_loop(void)
 {
 	__pdata uint16_t last_t = timer2_tick();
 	__pdata uint16_t last_link_update = last_t;
@@ -344,8 +339,8 @@ tdm_serial_loop(void)
 		}
 
 		// set right receive channel
-		// XXX: PGS: In single-channel mode, this shouldn't need setting
-		radio_set_channel(fhop_receive_channel());
+		// PGS: Always the only channel we have for CSMA
+		radio_set_channel(0);
 
 		// get the time before we check for a packet coming in
 		tnow = timer2_tick();
@@ -355,7 +350,6 @@ tdm_serial_loop(void)
 
 			// update the activity indication
 			received_packet = true;
-			fhop_set_locked(true);
 			
 			// update filtered RSSI value and packet stats
 			statistics.average_rssi = (radio_last_rssi() + 7*(uint16_t)statistics.average_rssi)/8;
@@ -502,7 +496,8 @@ tdm_serial_loop(void)
 		trailer.window = 0;
 
 		// set right transmit channel
-		radio_set_channel(fhop_transmit_channel());
+		// PGS: Always channel 0 for CSMA
+		radio_set_channel(0);
 
 		memcpy(&pbuf[len], &trailer, sizeof(trailer));
 
@@ -526,7 +521,8 @@ tdm_serial_loop(void)
 		radio_transmit(len + sizeof(trailer), pbuf, 0 );
 
 		// set right receive channel
-		radio_set_channel(fhop_receive_channel());
+		// PGS: Always channel 0 for CSMA
+		radio_set_channel(0);
 
 		// re-enable the receiver
 		radio_receiver_on();
@@ -651,14 +647,12 @@ golay_test(void)
 
 // initialise the TDM subsystem
 void
-tdm_init(void)
+csma_init(void)
 {
 	__pdata uint8_t air_rate = radio_air_rate();
 
 #define REGULATORY_MAX_WINDOW (((1000000UL/16)*4)/10)
 #define LBT_MIN_TIME_USEC 5000
-
-	// tdm_build_timing_table();
 
 	// calculate how many 16usec ticks it takes to send each byte
 	ticks_per_byte = (8+(8000000UL/(air_rate*1000UL)))/16;
@@ -695,18 +689,13 @@ tdm_init(void)
 	// PGS: With CSMA, this is always the maximum
 	packet_set_max_xmit(max_data_packet_length);
 
-	// crc_test();
-
-	// tdm_test_timing();
-	
-	// golay_test();
 }
 
 
 /// report tdm timings
 ///
 void 
-tdm_report_timing(void)
+csma_report_timing(void)
 {
 	printf("silence_period: %u\n", (unsigned)silence_period); delay_msec(1);
 	printf("max_data_packet_length: %u\n", (unsigned)max_data_packet_length); delay_msec(1);

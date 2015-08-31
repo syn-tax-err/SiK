@@ -40,7 +40,6 @@
 #include "radio.h"
 #include "tdm.h"
 #include "timer.h"
-#include "freq_hopping.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Interrupt vector prototypes
@@ -126,7 +125,7 @@ main(void)
 		panic("failed to enable receiver");
 	}
 
-	tdm_serial_loop();
+	csma_serial_loop();
 }
 
 void
@@ -241,7 +240,6 @@ static void
 radio_init(void)
 {
 	__pdata uint32_t freq_min, freq_max;
-	__pdata uint32_t channel_spacing;
 	__pdata uint8_t txpower;
 
 	// Do generic PHY initialisation
@@ -254,25 +252,21 @@ radio_init(void)
 		freq_min = 433050000UL;
 		freq_max = 434790000UL;
 		txpower = 10;
-		num_fh_channels = 10;
 		break;
 	case FREQ_470:
 		freq_min = 470000000UL;
 		freq_max = 471000000UL;
 		txpower = 10;
-		num_fh_channels = 10;
 		break;
 	case FREQ_868:
 		freq_min = 868000000UL;
 		freq_max = 869000000UL;
 		txpower = 10;
-		num_fh_channels = 10;
 		break;
 	case FREQ_915:
 		freq_min = 915000000UL;
 		freq_max = 928000000UL;
 		txpower = 20;
-		num_fh_channels = MAX_FREQ_CHANNELS;
 		break;
 	default:
 		freq_min = 0;
@@ -282,9 +276,6 @@ radio_init(void)
 		break;
 	}
 
-	if (param_get(PARAM_NUM_CHANNELS) != 0) {
-		num_fh_channels = param_get(PARAM_NUM_CHANNELS);
-	}
 	if (param_get(PARAM_MIN_FREQ) != 0) {
 		freq_min        = param_get(PARAM_MIN_FREQ) * 1000UL;
 	}
@@ -297,7 +288,6 @@ radio_init(void)
 
 	// constrain power and channels
 	txpower = constrain(txpower, BOARD_MINTXPOWER, BOARD_MAXTXPOWER);
-	num_fh_channels = constrain(num_fh_channels, 1, MAX_FREQ_CHANNELS);
 
 	// double check ranges the board can do
 	switch (g_board_frequency) {
@@ -342,34 +332,24 @@ radio_init(void)
 	// sanity checks
 	param_set(PARAM_MIN_FREQ, freq_min/1000);
 	param_set(PARAM_MAX_FREQ, freq_max/1000);
-	param_set(PARAM_NUM_CHANNELS, num_fh_channels);
-
-	channel_spacing = (freq_max - freq_min) / (num_fh_channels+2);
-
-	// add half of the channel spacing, to ensure that we are well
-	// away from the edges of the allowed range
-	freq_min += channel_spacing/2;
+	param_set(PARAM_NUM_CHANNELS, 1);
 
 	// add another offset based on network ID. This means that
 	// with different network IDs we will have much lower
 	// interference
 	srand(param_get(PARAM_NETID));
-	if (num_fh_channels > 5) {
-		freq_min += ((unsigned long)(rand()*625)) % channel_spacing;
-	}
-	debug("freq low=%lu high=%lu spacing=%lu\n", 
-	       freq_min, freq_min+(num_fh_channels*channel_spacing), 
-	       channel_spacing);
 
 	// set the frequency and channel spacing
 	// change base freq based on netid
 	radio_set_frequency(freq_min);
 
 	// set channel spacing
-	radio_set_channel_spacing(channel_spacing);
+	// PGS: This is a dummy now with CSMA and single-channel operation
+	radio_set_channel_spacing(1);
 
-	// start on a channel chosen by network ID
-	radio_set_channel(param_get(PARAM_NETID) % num_fh_channels);
+	// PGS: With CSMA we use only one channel
+	// start on the only channel
+	radio_set_channel(0);
 
 	// And intilise the radio with them.
 	if (!radio_configure(param_get(PARAM_AIR_SPEED)) &&
@@ -395,10 +375,7 @@ radio_init(void)
 	rtc_init();
 #endif
 
-	// initialise frequency hopping system
-	fhop_init(param_get(PARAM_NETID));
-
 	// initialise TDM system
-	tdm_init();
+	csma_init();
 }
 

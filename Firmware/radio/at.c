@@ -213,7 +213,7 @@ at_command(void)
 		if ((at_cmd_len >= 2) && (at_cmd[0] == 'R') && (at_cmd[1] == 'T')) {
 			// remote AT command - send it to the tdm
 			// system to send to the remote radio
-			tdm_remote_at();
+			csma_remote_at();
 			at_cmd_len = 0;
 			at_cmd_ready = false;
 			return;
@@ -323,10 +323,10 @@ at_i(void)
 		return;
 	}
 	case '6':
-		tdm_report_timing();
+		csma_report_timing();
 		return;
 	case '7':
-		tdm_show_rssi();
+		csma_show_rssi();
 		return;
 	default:
 		at_error();
