@@ -154,8 +154,10 @@ csma_show_rssi(void)
 	       (unsigned)statistics.average_noise,
 	       (unsigned)remote_statistics.average_noise,
 	       (unsigned)statistics.receive_count);
-	printf(" txe=%u rxe=%u stx=%u srx=%u ecc=%u/%u temp=%d dco=%u ",
-	       (unsigned)errors.tx_errors,
+	printf(" txe=%u,%u,%u rxe=%u stx=%u srx=%u ecc=%u/%u temp=%d dco=%u ",
+	       (unsigned)errors.tx_errors_fifo,
+	       (unsigned)errors.tx_errors_short,
+	       (unsigned)errors.tx_errors_timeout,
 	       (unsigned)errors.rx_errors,
 	       (unsigned)errors.serial_tx_overflow,
 	       (unsigned)errors.serial_rx_overflow,

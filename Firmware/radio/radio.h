@@ -131,7 +131,9 @@ __pdata extern struct statistics statistics, remote_statistics;
 
 struct error_counts {
 	uint16_t rx_errors;		///< count of packet receive errors
-	uint16_t tx_errors;		///< count of packet transmit errors
+	uint16_t tx_errors_fifo;		///< count of packet transmit errors (FIFO empty)
+	uint16_t tx_errors_short;		///< count of packet transmit errors (short write)
+	uint16_t tx_errors_timeout;		///< count of packet transmit errors (TX timeout)
 	uint16_t serial_tx_overflow;    ///< count of serial transmit overflows
 	uint16_t serial_rx_overflow;    ///< count of serial receive overflows
 	uint16_t corrected_errors;      ///< count of words corrected by golay code

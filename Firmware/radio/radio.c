@@ -369,8 +369,8 @@ radio_transmit_simple(__data uint8_t length, __xdata uint8_t * __pdata buf, __pd
 			// we ran out of bytes in the FIFO
 			radio_clear_transmit_fifo();
 			debug("FFERR %u\n", (unsigned)length);
-			if (errors.tx_errors != 0xFFFF) {
-				errors.tx_errors++;
+			if (errors.tx_errors_fifo != 0xFFFF) {
+				errors.tx_errors_fifo++;
 			}
 			return false;
 		}
@@ -388,8 +388,8 @@ radio_transmit_simple(__data uint8_t length, __xdata uint8_t * __pdata buf, __pd
 			// whole packet out
 			if (length != 0) {
 				debug("TX short %u\n", (unsigned)length);
-				if (errors.tx_errors != 0xFFFF) {
-					errors.tx_errors++;
+				if (errors.tx_errors_short != 0xFFFF) {
+					errors.tx_errors_short++;
 				}
 				return false;
 			}
@@ -404,8 +404,8 @@ radio_transmit_simple(__data uint8_t length, __xdata uint8_t * __pdata buf, __pd
 	       tstart,
 	       timer2_tick(),
 	       (unsigned)length);
-	if (errors.tx_errors != 0xFFFF) {
-		errors.tx_errors++;
+	if (errors.tx_errors_timeout != 0xFFFF) {
+		errors.tx_errors_timeout++;
 	}
 
 	return false;
