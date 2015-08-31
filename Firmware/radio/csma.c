@@ -532,7 +532,7 @@ csma_serial_loop(void)
 				}
 				
 				// start transmitting the packet
-				radio_transmit(len + sizeof(trailer), pbuf, transmit_wait );
+				radio_transmit(len + sizeof(trailer), pbuf, 10000 );
 				
 				// PGS DEBUG: Display a character each time we send a packet.
 				hbuf[0]='.';
