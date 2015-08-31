@@ -127,6 +127,10 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				} else {
 					last_was_bang=1;
 				}
+			} else if ((c=='v') && last_was_bang ) {
+				// Provide version info, to allow quick detection of CSMA
+				// firmware
+				putchar('1');
 			} else if ((c=='.') && last_was_bang ) {
 				last_was_bang=0;
 				// Insert escaped ! into serial RX buffer
