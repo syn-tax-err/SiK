@@ -148,12 +148,13 @@ static __pdata char remote_at_cmd[AT_CMD_MAXLEN + 1];
 void
 csma_show_rssi(void)
 {
-	printf("L/R RSSI: %u/%u  L/R noise: %u/%u pkts: %u ",
+	printf("L/R RSSI: %u/%u  L/R noise: %u/%u pkts: %u,%u ",
 	       (unsigned)statistics.average_rssi,
 	       (unsigned)remote_statistics.average_rssi,
 	       (unsigned)statistics.average_noise,
 	       (unsigned)remote_statistics.average_noise,
-	       (unsigned)statistics.receive_count);
+	       (unsigned)statistics.receive_count,
+	       (unsigned)statistics.receive_count_statspkt);
 	printf(" txe=%u,%u,%u rxe=%u stx=%u srx=%u ecc=%u/%u temp=%d dco=%u ",
 	       (unsigned)errors.tx_errors_fifo,
 	       (unsigned)errors.tx_errors_short,
@@ -169,6 +170,7 @@ csma_show_rssi(void)
 	       last_was_bang,tx_buffered_data,
 	       serial_read_available());
 	statistics.receive_count = 0;
+	statistics.receive_count_statspkt = 0;
 }
 
 /// display test output
@@ -383,8 +385,9 @@ csma_serial_loop(void)
 					memcpy(&remote_statistics, pbuf, len);
 				}
 
-				// don't count control packets in the stats
+				// Count stats packets separately
 				statistics.receive_count--;
+				statistics.receive_count_statspkt++;
 			} else if (trailer.window != 0) {
 				last_t = tnow;
 				
@@ -506,8 +509,10 @@ csma_serial_loop(void)
 			
 				trailer.resend = packet_is_resend();
 
-				// PGS: Trailer window is meaningless in CSMA mode
-				trailer.window = 0;
+				// PGS: Trailer window is meaningless in CSMA mode,
+				// except to indicate that the packet is data, not
+				// statistics.
+				trailer.window = 1;
 				
 				// set right transmit channel
 				// PGS: Always channel 0 for CSMA

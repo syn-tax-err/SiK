@@ -126,6 +126,7 @@ struct statistics {
 	uint8_t average_rssi;
 	uint8_t average_noise;
 	uint16_t receive_count;
+	uint16_t receive_count_statspkt;
 };
 __pdata extern struct statistics statistics, remote_statistics;
 
