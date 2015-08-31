@@ -62,7 +62,7 @@ __code const struct parameter_info {
 	// a wide enough 3dB channel width to qualify as "spread spectrum" under the
 	// Australian LIPD class license Item 45 (or is it Item 52? I need to check.)
 	{"TXPOWER",		1},  // 250mW TX power = 1W power consumed - reasonable maximum for battery powered Mesh Extenders
-	{"ECC",			1},   // match Serval Mesh Extender default
+	{"ECC",			0},   // match Serval Mesh Extender default
 	{"MAVLINK",		1},   // match Serval Mesh Extender default
 	{"OPPRESEND",		1},
 	{"FREQ",		923000}, // OK for AU,US,CA, and NZ, but not others
