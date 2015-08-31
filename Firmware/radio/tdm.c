@@ -55,13 +55,6 @@ __xdata uint8_t	pbuf[MAX_PACKET_LENGTH];
 /// a packet announcement buffer for the TDM code
 __xdata uint8_t	hbuf[MAX_HEADER_LENGTH];
 
-/// how many 16usec ticks are remaining in the current state
-__pdata static uint16_t tdm_state_remaining;
-
-/// This is enough to hold at least 3 packets and is based
-/// on the configured air data rate.
-__pdata static uint16_t tx_window_width;
-
 /// the maximum data packet size we can fit
 __pdata static uint8_t max_data_packet_length;
 
@@ -194,144 +187,6 @@ static uint16_t flight_time_estimate(__pdata uint8_t packet_len)
 	return packet_latency + (packet_len * ticks_per_byte);
 }
 
-
-/// synchronise tx windows
-///
-/// we receive a 16 bit value with each packet which indicates how many
-/// more 16usec ticks the sender has in their transmit window. The
-/// sender has already adjusted the value for the flight time
-///
-/// The job of this function is to adjust our own transmit window to
-/// match the other radio and thus bring the two radios into sync
-///
-static void
-sync_tx_windows(__pdata uint8_t packet_length)
-{
-	__data enum tdm_state old_state = tdm_state;
-	__pdata uint16_t old_remaining = tdm_state_remaining;
-
-	if (trailer.bonus) {
-		// the other radio is using our transmit window
-		// via yielded ticks
-		if (old_state == TDM_SILENCE1) {
-			// This can be caused by a packet
-			// taking longer than expected to arrive.
-			// don't change back to transmit state or we
-			// will cause an extra frequency change which
-			// will get us out of sequence
-			tdm_state_remaining = silence_period;
-		} else if (old_state == TDM_RECEIVE || old_state == TDM_SILENCE2) {
-			// this is quite strange. We received a packet
-			// so we must have been on the right
-			// frequency. Best bet is to set us at the end
-			// of their silence period
-			tdm_state = TDM_SILENCE2;
-			tdm_state_remaining = 1;
-		} else {
-			tdm_state = TDM_TRANSMIT;
-			tdm_state_remaining = trailer.window;
-		}
-	} else {
-		// we are in the other radios transmit window, our
-		// receive window
-		tdm_state = TDM_RECEIVE;
-		tdm_state_remaining = trailer.window;
-	}
-
-	// if the other end has sent a zero length packet and we are
-	// in their transmit window then they are yielding some ticks to us.
-	bonus_transmit = (tdm_state == TDM_RECEIVE && packet_length==0);
-
-	// if we are not in transmit state then we can't be yielded
-	if (tdm_state != TDM_TRANSMIT) {
-		transmit_yield = 0;
-	}
-
-	if (at_testmode & AT_TEST_TDM) {
-		__pdata int16_t delta;
-		delta = old_remaining - tdm_state_remaining;
-		if (old_state != tdm_state ||
-		    delta > (int16_t)packet_latency/2 ||
-		    delta < -(int16_t)packet_latency/2) {
-			printf("TDM: %u/%u len=%u ",
-			       (unsigned)old_state,
-			       (unsigned)tdm_state,
-			       (unsigned)packet_length);
-			printf(" delta: %d\n",
-			       (int)delta);
-		}
-	}
-}
-
-/// update the TDM state machine
-///
-static void
-tdm_state_update(__pdata uint16_t tdelta)
-{
-	// update the amount of time we are waiting for a preamble
-	// to turn into a real packet
-	if (tdelta > transmit_wait) {
-		transmit_wait = 0;
-	} else {
-		transmit_wait -= tdelta;
-	}
-
-	// have we passed the next transition point?
-	while (tdelta >= tdm_state_remaining) {
-		// advance the tdm state machine
-		tdm_state = (tdm_state+1) % 4;
-
-		// work out the time remaining in this state
-		tdelta -= tdm_state_remaining;
-
-		if (tdm_state == TDM_TRANSMIT || tdm_state == TDM_RECEIVE) {
-			tdm_state_remaining = tx_window_width;
-		} else {
-			tdm_state_remaining = silence_period;
-		}
-
-		// change frequency at the start and end of our transmit window
-		// this maximises the chance we will be on the right frequency
-		// to match the other radio
-		if (tdm_state == TDM_TRANSMIT || tdm_state == TDM_SILENCE1) {
-			fhop_window_change();
-			radio_receiver_on();
-
-			if (num_fh_channels > 1) {
-				// reset the LBT listen time
-				lbt_listen_time = 0;
-				lbt_rand = 0;
-			}
-		}
-
-		if (tdm_state == TDM_TRANSMIT && (duty_cycle - duty_cycle_offset) != 100) {
-			// update duty cycle averages
-			average_duty_cycle = (0.95*average_duty_cycle) + (0.05*(100.0*transmitted_ticks)/(2*(silence_period+tx_window_width)));
-			transmitted_ticks = 0;
-			duty_cycle_wait = (average_duty_cycle >= (duty_cycle - duty_cycle_offset));
-		}
-
-		// we lose the bonus on all state changes
-		bonus_transmit = 0;
-
-		// reset yield flag on all state changes
-		transmit_yield = 0;
-
-		// no longer waiting for a packet
-		transmit_wait = 0;
-	}
-
-	tdm_state_remaining -= tdelta;
-}
-
-/// change tdm phase
-///
-void
-tdm_change_phase(void)
-{
-	tdm_state = (tdm_state+2) % 4;
-}
-
 /// called to check temperature
 ///
 static void temperature_update(void)
@@ -384,27 +239,10 @@ link_update(void)
 	if (unlock_count > 40) {
 		// if we have been unlocked for 20 seconds
 		// then start frequency scanning again
+		// PGS: Except that with CSMA, we don't scan, but we still reset statistics
 
 		unlock_count = 5;
-		// randomise the next transmit window using some
-		// entropy from the radio if we have waited
-		// for a full set of hops with this time base
-		if (timer_entropy() & 1) {
-			register uint16_t old_remaining = tdm_state_remaining;
-			if (tdm_state_remaining > silence_period) {
-				tdm_state_remaining -= packet_latency;
-			} else {
-				tdm_state_remaining = 1;
-			}
-			if (at_testmode & AT_TEST_TDM) {
-				printf("TDM: change timing %u/%u\n",
-				       (unsigned)old_remaining,
-				       (unsigned)tdm_state_remaining);
-			}
-		}
-		if (at_testmode & AT_TEST_TDM) {
-			printf("TDM: scanning\n");
-		}
+
 		fhop_set_locked(false);
 	}
 
@@ -546,9 +384,6 @@ tdm_serial_loop(void)
 				// don't count control packets in the stats
 				statistics.receive_count--;
 			} else if (trailer.window != 0) {
-				// sync our transmit windows based on
-				// received header
-				sync_tx_windows(len);
 				last_t = tnow;
 				
 				if (trailer.command == 1) {
@@ -596,7 +431,6 @@ tdm_serial_loop(void)
 		// packet could have cost us a lot of time.
 		tnow = timer2_tick();
 		tdelta = tnow - last_t;
-		tdm_state_update(tdelta);
 		last_t = tnow;
 
 		// update link status every 0.5s
@@ -689,10 +523,7 @@ tdm_serial_loop(void)
 		}
 
 		// start transmitting the packet
-		if (!radio_transmit(len + sizeof(trailer), pbuf, tdm_state_remaining + (silence_period/2)) &&
-		    len != 0 && trailer.window != 0 && trailer.command == 0) {
-			packet_force_resend();
-		}
+		radio_transmit(len + sizeof(trailer), pbuf, 0 );
 
 		// set right receive channel
 		radio_set_channel(fhop_receive_channel());
@@ -822,9 +653,7 @@ golay_test(void)
 void
 tdm_init(void)
 {
-	__pdata uint16_t i;
 	__pdata uint8_t air_rate = radio_air_rate();
-	__pdata uint32_t window_width;
 
 #define REGULATORY_MAX_WINDOW (((1000000UL/16)*4)/10)
 #define LBT_MIN_TIME_USEC 5000
@@ -856,29 +685,6 @@ tdm_init(void)
 	// set the silence period to two times the packet latency
         silence_period = 2*packet_latency;
 
-        // set the transmit window to allow for 3 full sized packets
-	window_width = 3*(packet_latency+(max_data_packet_length*(uint32_t)ticks_per_byte));
-
-	// if LBT is enabled, we need at least 3*5ms of window width
-	if (lbt_rssi != 0) {
-		// min listen time is 5ms
-		lbt_min_time = LBT_MIN_TIME_USEC/16;
-		window_width = constrain(window_width, 3*lbt_min_time, window_width);
-	}
-
-	// the window width cannot be more than 0.4 seconds to meet US
-	// regulations
-	if (window_width >= REGULATORY_MAX_WINDOW) {
-		window_width = REGULATORY_MAX_WINDOW;
-	}
-
-	// make sure it fits in the 13 bits of the trailer window
-	while (window_width > 0x1FFF) {
-		window_width = 0x1FFF;
-	}
-
-	tx_window_width = window_width;
-
 	// now adjust the packet_latency for the actual preamble
 	// length, so we get the right flight time estimates, while
 	// not changing the round timings
@@ -886,11 +692,8 @@ tdm_init(void)
 
 	// tell the packet subsystem our max packet size, which it
 	// needs to know for MAVLink packet boundary detection
-	i = (tx_window_width - packet_latency) / ticks_per_byte;
-	if (i > max_data_packet_length) {
-		i = max_data_packet_length;
-	}
-	packet_set_max_xmit(i);
+	// PGS: With CSMA, this is always the maximum
+	packet_set_max_xmit(max_data_packet_length);
 
 	// crc_test();
 
@@ -906,7 +709,6 @@ void
 tdm_report_timing(void)
 {
 	printf("silence_period: %u\n", (unsigned)silence_period); delay_msec(1);
-	printf("tx_window_width: %u\n", (unsigned)tx_window_width); delay_msec(1);
 	printf("max_data_packet_length: %u\n", (unsigned)max_data_packet_length); delay_msec(1);
 }
 
