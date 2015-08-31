@@ -68,7 +68,7 @@ extern void    T3_ISR(void)            __interrupt(INTERRUPT_TIMER3);
 
 //@}
 
-__code const char g_banner_string[] = "ME/SiK " stringify(APP_VERSION_HIGH) "." stringify(APP_VERSION_LOW) " on " BOARD_NAME;
+__code const char g_banner_string[] = "ME/CSMA/SiK " stringify(APP_VERSION_HIGH) "." stringify(APP_VERSION_LOW) " on " BOARD_NAME;
 __code const char g_version_string[] = stringify(APP_VERSION_HIGH) "." stringify(APP_VERSION_LOW);
 
 __pdata enum BoardFrequency	g_board_frequency;	///< board info from the bootloader
@@ -239,7 +239,7 @@ hardware_init(void)
 static void
 radio_init(void)
 {
-	__pdata uint32_t freq_min, freq_max;
+	__pdata uint32_t freq_min;
 	__pdata uint8_t txpower;
 
 	// Do generic PHY initialisation
@@ -250,27 +250,22 @@ radio_init(void)
 	switch (g_board_frequency) {
 	case FREQ_433:
 		freq_min = 433050000UL;
-		freq_max = 434790000UL;
 		txpower = 10;
 		break;
 	case FREQ_470:
 		freq_min = 470000000UL;
-		freq_max = 471000000UL;
 		txpower = 10;
 		break;
 	case FREQ_868:
 		freq_min = 868000000UL;
-		freq_max = 869000000UL;
 		txpower = 10;
 		break;
 	case FREQ_915:
 		freq_min = 915000000UL;
-		freq_max = 928000000UL;
 		txpower = 20;
 		break;
 	default:
 		freq_min = 0;
-		freq_max = 0;
 		txpower = 0;
 		panic("bad board frequency %d", g_board_frequency);
 		break;
@@ -278,9 +273,6 @@ radio_init(void)
 
 	if (param_get(PARAM_MIN_FREQ) != 0) {
 		freq_min        = param_get(PARAM_MIN_FREQ) * 1000UL;
-	}
-	if (param_get(PARAM_MAX_FREQ) != 0) {
-		freq_max        = param_get(PARAM_MAX_FREQ) * 1000UL;
 	}
 	if (param_get(PARAM_TXPOWER) != 0) {
 		txpower = param_get(PARAM_TXPOWER);
@@ -293,27 +285,19 @@ radio_init(void)
 	switch (g_board_frequency) {
 	case FREQ_433:
 		freq_min = constrain(freq_min, 414000000UL, 460000000UL);
-		freq_max = constrain(freq_max, 414000000UL, 460000000UL);
 		break;
 	case FREQ_470:
 		freq_min = constrain(freq_min, 450000000UL, 490000000UL);
-		freq_max = constrain(freq_max, 450000000UL, 490000000UL);
 		break;
 	case FREQ_868:
 		freq_min = constrain(freq_min, 849000000UL, 889000000UL);
-		freq_max = constrain(freq_max, 849000000UL, 889000000UL);
 		break;
 	case FREQ_915:
 		freq_min = constrain(freq_min, 868000000UL, 935000000UL);
-		freq_max = constrain(freq_max, 868000000UL, 935000000UL);
 		break;
 	default:
 		panic("bad board frequency %d", g_board_frequency);
 		break;
-	}
-
-	if (freq_max == freq_min) {
-		freq_max = freq_min + 1000000UL;
 	}
 
 	// get the duty cycle we will use
@@ -331,7 +315,6 @@ radio_init(void)
 
 	// sanity checks
 	param_set(PARAM_MIN_FREQ, freq_min/1000);
-	param_set(PARAM_MAX_FREQ, freq_max/1000);
 	param_set(PARAM_NUM_CHANNELS, 1);
 
 	// add another offset based on network ID. This means that
