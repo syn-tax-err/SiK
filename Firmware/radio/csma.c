@@ -494,66 +494,101 @@ csma_serial_loop(void)
 		} else {
 			// Only send packets if we have bytes pending, and the noise level is low enough.
 			// Ideally we should use a dynamic LBT regieme instead of a fixed point like this,
-			// but it will probably be okay.		
-			if (tx_buffered_data && (statistics.average_noise < 70)) {
-				// get a packet from the serial port
-				len = packet_get_next(max_xmit, pbuf);
-				trailer.command = packet_is_injected();
+			// but it will probably be okay.
+			if (statistics.average_noise < 70)
+				if ((!tx_buffered_data)&&send_statistics) {
+					// send a stats packet
+					// send a statistics packet
+					send_statistics = 0;
+					memcpy(pbuf, &statistics, sizeof(statistics));
+					len = sizeof(statistics);
+					
+					// mark a stats packet with a zero window
+					trailer.window = 0;
+					trailer.resend = 0;
 
-				if (len > max_data_packet_length) {
-					panic("oversized tdm packet");
-				}
+					// set right transmit channel
+					// PGS: Always channel 0 for CSMA
+					radio_set_channel(0);
+					
+					memcpy(&pbuf[len], &trailer, sizeof(trailer));
+									
+					// after sending a packet leave a bit of time before
+					// sending the next one. The receivers don't cope well
+					// with back to back packets
+					transmit_wait = packet_latency;
+					
+					// if we're implementing a duty cycle, add the
+					// transmit time to the number of ticks we've been transmitting
+					if ((duty_cycle - duty_cycle_offset) != 100) {
+						transmitted_ticks += flight_time_estimate(len+sizeof(trailer));
+					}
+					
+					// start transmitting the packet
+					radio_transmit(len + sizeof(trailer), pbuf, 10000 );
+					
+					// set right receive channel
+					// PGS: Always channel 0 for CSMA
+					radio_set_channel(0);
+					
+					// re-enable the receiver
+					radio_receiver_on();
 
-				// Clear TX gate
-				tx_buffered_data = 0;
-			
-				trailer.resend = packet_is_resend();
-
-				// PGS: Trailer window is meaningless in CSMA mode,
-				// except to indicate that the packet is data, not
-				// statistics.
-				trailer.window = 1;
-				
-				// set right transmit channel
-				// PGS: Always channel 0 for CSMA
-				radio_set_channel(0);
-				
-				memcpy(&pbuf[len], &trailer, sizeof(trailer));
-				
-				if (trailer.window != 0) {
+				} else if (tx_buffered_data) {
+					// get a packet from the serial port
+					len = packet_get_next(max_xmit, pbuf);
+					trailer.command = packet_is_injected();
+					
+					if (len > max_data_packet_length) {
+						panic("oversized tdm packet");
+					}
+					
+					// Clear TX gate
+					tx_buffered_data = 0;
+					
+					trailer.resend = packet_is_resend();
+					
+					// PGS: Trailer window is meaningless in CSMA mode,
+					// except to indicate that the packet is data, not
+					// statistics.
+					trailer.window = 1;
+					
+					// set right transmit channel
+					// PGS: Always channel 0 for CSMA
+					radio_set_channel(0);
+					
+					memcpy(&pbuf[len], &trailer, sizeof(trailer));
+					
 					// show the user that we're sending real data
 					LED_ACTIVITY = LED_ON;
-				}
-				
-				// after sending a packet leave a bit of time before
-				// sending the next one. The receivers don't cope well
-				// with back to back packets
-				transmit_wait = packet_latency;
-				
-				// if we're implementing a duty cycle, add the
-				// transmit time to the number of ticks we've been transmitting
-				if ((duty_cycle - duty_cycle_offset) != 100) {
-					transmitted_ticks += flight_time_estimate(len+sizeof(trailer));
-				}
-				
-				// start transmitting the packet
-				radio_transmit(len + sizeof(trailer), pbuf, 10000 );
-				
-				// PGS DEBUG: Display a character each time we send a packet.
-				hbuf[0]='.';
-				serial_write_buf(hbuf, 1);
-				
-				// set right receive channel
-				// PGS: Always channel 0 for CSMA
-				radio_set_channel(0);
-				
-				// re-enable the receiver
-				radio_receiver_on();
-				
-				if (trailer.window != 0) {
+					
+					// after sending a packet leave a bit of time before
+					// sending the next one. The receivers don't cope well
+					// with back to back packets
+					transmit_wait = packet_latency;
+					
+					// if we're implementing a duty cycle, add the
+					// transmit time to the number of ticks we've been transmitting
+					if ((duty_cycle - duty_cycle_offset) != 100) {
+						transmitted_ticks += flight_time_estimate(len+sizeof(trailer));
+					}
+					
+					// start transmitting the packet
+					radio_transmit(len + sizeof(trailer), pbuf, 10000 );
+					
+					// PGS DEBUG: Display a character each time we send a packet.
+					hbuf[0]='.';
+					serial_write_buf(hbuf, 1);
+					
+					// set right receive channel
+					// PGS: Always channel 0 for CSMA
+					radio_set_channel(0);
+					
+					// re-enable the receiver
+					radio_receiver_on();
+					
 					LED_ACTIVITY = LED_OFF;
 				}
-			}
 		}
 	}
 }
