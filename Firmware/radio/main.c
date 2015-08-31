@@ -271,8 +271,8 @@ radio_init(void)
 		break;
 	}
 
-	if (param_get(PARAM_MIN_FREQ) != 0) {
-		freq_min        = param_get(PARAM_MIN_FREQ) * 1000UL;
+	if (param_get(PARAM_FREQ) != 0) {
+		freq_min        = param_get(PARAM_FREQ) * 1000UL;
 	}
 	if (param_get(PARAM_TXPOWER) != 0) {
 		txpower = param_get(PARAM_TXPOWER);
@@ -314,7 +314,7 @@ radio_init(void)
 	param_set(PARAM_LBT_RSSI, lbt_rssi);
 
 	// sanity checks
-	param_set(PARAM_MIN_FREQ, freq_min/1000);
+	param_set(PARAM_FREQ, freq_min/1000);
 
 	// add another offset based on network ID. This means that
 	// with different network IDs we will have much lower

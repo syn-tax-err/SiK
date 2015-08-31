@@ -138,7 +138,7 @@ static void check_heartbeat(__xdata uint8_t * __pdata buf)
 		value=buf[19]; value=value<<8;
 		value=buf[20]; value=value<<8;
 		value=buf[21]; 
-		if (param_set(PARAM_MIN_FREQ,value)) reject=true;
+		if (param_set(PARAM_FREQ,value)) reject=true;
 		// unused (was upper frequency)
 		value=buf[22]; value=value<<8;
 		value=buf[23]; value=value<<8;
