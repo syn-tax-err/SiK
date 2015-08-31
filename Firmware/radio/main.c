@@ -38,7 +38,7 @@
 
 #include <stdarg.h>
 #include "radio.h"
-#include "tdm.h"
+#include "csma.h"
 #include "timer.h"
 
 ////////////////////////////////////////////////////////////////////////////////

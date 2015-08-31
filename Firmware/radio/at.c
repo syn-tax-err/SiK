@@ -33,7 +33,7 @@
 ///
 
 #include "radio.h"
-#include "tdm.h"
+#include "csma.h"
 
 
 // canary data for ram wrap. It is in at.c as the compiler

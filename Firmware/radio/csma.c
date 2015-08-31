@@ -29,7 +29,7 @@
 //
 
 ///
-/// @file	tdm.c
+/// @file	csma.c
 ///
 /// carrier sense multiple-access code
 /// based on the original time division multiplexing code
@@ -37,7 +37,7 @@
 
 #include <stdarg.h>
 #include "radio.h"
-#include "tdm.h"
+#include "csma.h"
 #include "timer.h"
 #include "packet.h"
 #include "golay.h"
