@@ -505,12 +505,8 @@ tdm_serial_loop(void)
 			test_display = 0;
 		}
 
-		if (seen_mavlink && feature_mavlink_framing && !at_mode_active) {
-			seen_mavlink = false;
-			MAVLink_report();
-		}
-
 		// set right receive channel
+		// XXX: PGS: In single-channel mode, this shouldn't need setting
 		radio_set_channel(fhop_receive_channel());
 
 		// get the time before we check for a packet coming in
@@ -560,6 +556,8 @@ tdm_serial_loop(void)
 				} else {		
 					if (!at_mode_active &&
 					    !packet_is_duplicate(len, pbuf, trailer.resend)) {
+						// PGS: The following framing allows servald and friends to accurately identify the
+						// framing of a packet
 						// Indicate radio frame here, even if frame is empty.
 						hbuf[0]=0xaa;
 						hbuf[1]=0x55;
@@ -623,31 +621,6 @@ tdm_serial_loop(void)
 			}
 		}
 
-		// we are allowed to transmit in our transmit window
-		// or in the other radios transmit window if we have
-		// bonus ticks
-#if USE_TICK_YIELD
-		if (tdm_state != TDM_TRANSMIT &&
-		    !(bonus_transmit && tdm_state == TDM_RECEIVE)) {
-			// we cannot transmit now
-			continue;
-		}
-#else
-		if (tdm_state != TDM_TRANSMIT) {
-			continue;
-		}		
-#endif
-
-		if (transmit_yield != 0) {
-			// we've give up our window
-			continue;
-		}
-
-		if (transmit_wait != 0) {
-			// we're waiting for a preamble to turn into a packet
-			continue;
-		}
-
 		if (!received_packet &&
 		    radio_preamble_detected() ||
 		    radio_receive_in_progress()) {
@@ -667,21 +640,9 @@ tdm_serial_loop(void)
 			continue;
 		}
 
-		// how many bytes could we transmit in the time we
-		// have left?
-		if (tdm_state_remaining < packet_latency) {
-			// none ....
-			continue;
-		}
-		max_xmit = (tdm_state_remaining - packet_latency) / ticks_per_byte;
-		if (max_xmit < sizeof(trailer)+1) {
-			// can't fit the trailer in with a byte to spare
-			continue;
-		}
-		max_xmit -= sizeof(trailer)+1;
-		if (max_xmit > max_data_packet_length) {
-			max_xmit = max_data_packet_length;
-		}
+		// PGS: Now that we are basically using a CSMA protocol, we just always allow sending the
+		// maximum number of bytes.
+		max_xmit = max_data_packet_length;
 
 		// ask the packet system for the next packet to send
 		if (send_at_command && 
@@ -701,27 +662,10 @@ tdm_serial_loop(void)
 			panic("oversized tdm packet");
 		}
 
-		trailer.bonus = (tdm_state == TDM_RECEIVE);
 		trailer.resend = packet_is_resend();
 
-		if (tdm_state == TDM_TRANSMIT &&
-		    len == 0 && 
-		    send_statistics && 
-		    max_xmit >= sizeof(statistics)) {
-			// send a statistics packet
-			send_statistics = 0;
-			memcpy(pbuf, &statistics, sizeof(statistics));
-			len = sizeof(statistics);
-		
-			// mark a stats packet with a zero window
-			trailer.window = 0;
-			trailer.resend = 0;
-		} else {
-			// calculate the control word as the number of
-			// 16usec ticks that will be left in this
-			// tdm state after this packet is transmitted
-			trailer.window = (uint16_t)(tdm_state_remaining - flight_time_estimate(len+sizeof(trailer)));
-		}
+		// PGS: Trailer window is meaningless in CSMA mode
+		trailer.window = 0;
 
 		// set right transmit channel
 		radio_set_channel(fhop_transmit_channel());
@@ -731,13 +675,6 @@ tdm_serial_loop(void)
 		if (len != 0 && trailer.window != 0) {
 			// show the user that we're sending real data
 			LED_ACTIVITY = LED_ON;
-		}
-
-		if (len == 0) {
-			// sending a zero byte packet gives up
-			// our window, but doesn't change the
-			// start of the next window
-			transmit_yield = 1;
 		}
 
 		// after sending a packet leave a bit of time before
@@ -757,12 +694,6 @@ tdm_serial_loop(void)
 			packet_force_resend();
 		}
 
-		if (lbt_rssi != 0) {
-			// reset the LBT listen time
-			lbt_listen_time = 0;
-			lbt_rand = 0;
-		}
-
 		// set right receive channel
 		radio_set_channel(fhop_receive_channel());
 
@@ -774,6 +705,7 @@ tdm_serial_loop(void)
 		}
 	}
 }
+
 
 #if 0
 /// build the timing table
