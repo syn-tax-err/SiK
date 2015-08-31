@@ -49,6 +49,10 @@ __xdata uint8_t tx_buf[512] = {0};
 __pdata const uint16_t  rx_mask = sizeof(rx_buf) - 1;
 __pdata const uint16_t  tx_mask = sizeof(tx_buf) - 1;
 
+// TX gate / ! escape state
+static __bit last_was_bang=0;
+static __bit tx_buffered_data=0;
+
 // FIFO insert/remove pointers
 static volatile __pdata uint16_t				rx_insert, rx_remove;
 static volatile __pdata uint16_t				tx_insert, tx_remove;
@@ -115,12 +119,32 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			// run the byte past the +++ detector
 			at_plus_detector(c);
 
-			// and queue it for general reception
-			if (BUF_NOT_FULL(rx)) {
-				BUF_INSERT(rx, c);
+			// PGS: To enforce packet boundaries where we want them, we escape
+			// '!'.  '!!' means send buffered serial data.  '!' followed by '.'
+			// inserts a '!' into the serial buffer.
+			if (c=='!') {
+				if (last_was_bang) {
+					tx_buffered_data=1;
+				} else last_was_bang=1;
+			} else if (c=='.' && last_was_bang ) {
+				last_was_bang=0;
+				// Insert escaped ! into serial RX buffer
+				if (BUF_NOT_FULL(rx)) {
+					BUF_INSERT(rx, '!');
+				} else {
+					if (errors.serial_rx_overflow != 0xFFFF) {
+						errors.serial_rx_overflow++;
+					}
+				}				
 			} else {
-				if (errors.serial_rx_overflow != 0xFFFF) {
-					errors.serial_rx_overflow++;
+				last_was_bang=0;
+				// and queue it for general reception
+				if (BUF_NOT_FULL(rx)) {
+					BUF_INSERT(rx, c);
+				} else {
+					if (errors.serial_rx_overflow != 0xFFFF) {
+						errors.serial_rx_overflow++;
+					}
 				}
 			}
 #ifdef SERIAL_CTS

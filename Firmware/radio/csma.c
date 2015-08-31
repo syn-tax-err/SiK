@@ -47,6 +47,9 @@
 
 #define MAX_HEADER_LENGTH 9
 
+extern static __bit last_was_bang=0;
+extern static __bit tx_buffered_data=0;
+
 /// a packet buffer for the TDM code
 __xdata uint8_t	pbuf[MAX_PACKET_LENGTH];
 /// a packet announcement buffer for the TDM code
@@ -490,7 +493,10 @@ csma_serial_loop(void)
 			panic("oversized tdm packet");
 		}
 
-		if (len>0) {
+		// Only send packets if we have bytes pending, and the noise level is low enough.
+		// Ideally we should use a dynamic LBT regieme instead of a fixed point like this,
+		// but it will probably be okay.		
+		if (tx_buffered_data && statistics.average_noise < 70) {
 			trailer.resend = packet_is_resend();
 
 			// PGS: Trailer window is meaningless in CSMA mode
