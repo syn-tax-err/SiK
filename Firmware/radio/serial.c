@@ -122,16 +122,12 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			// inserts a '!' into the serial buffer.
 			if (c=='!') {
 				if (last_was_bang) {
-					if (!tx_buffered_data) putchar('>');
-					else putchar(']');
 					tx_buffered_data=1;
 					last_was_bang=0;
 				} else {
-					putchar('!');
 					last_was_bang=1;
 				}
 			} else if ((c=='.') && last_was_bang ) {
-				putchar('E');
 				last_was_bang=0;
 				// Insert escaped ! into serial RX buffer
 				if (BUF_NOT_FULL(rx)) {
