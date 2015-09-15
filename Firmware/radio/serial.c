@@ -146,15 +146,9 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					}
 				}				
 			} else {
+				// Unknown ! command
 				last_was_bang=0;
-				// and queue it for general reception
-				if (BUF_NOT_FULL(rx)) {
-					BUF_INSERT(rx, c);
-				} else {
-					if (errors.serial_rx_overflow != 0xFFFF) {
-						errors.serial_rx_overflow++;
-					}
-				}
+				putchar('E');
 			}
 #ifdef SERIAL_CTS
 			if (BUF_FREE(rx) < SERIAL_CTS_THRESHOLD_LOW) {
