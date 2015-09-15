@@ -127,6 +127,10 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				} else {
 					last_was_bang=1;
 				}
+			} else if ((c=='H') && last_was_bang ) {
+				radio_set_transmit_power(25);
+			} else if ((c=='L') && last_was_bang ) {
+				radio_set_transmit_power(1);
 			} else if ((c=='v') && last_was_bang ) {
 				// Provide version info, to allow quick detection of CSMA
 				// firmware
