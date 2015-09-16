@@ -145,10 +145,19 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 						errors.serial_rx_overflow++;
 					}
 				}				
-			} else {
+			} else if (last_was_bang) {
 				// Unknown ! command
 				last_was_bang=0;
 				putchar('E');
+			} else {
+				// Character to put in TX buffer
+				if (BUF_NOT_FULL(rx)) {
+					BUF_INSERT(rx, c);
+				} else {
+					if (errors.serial_rx_overflow != 0xFFFF) {
+						errors.serial_rx_overflow++;
+					}
+				}				
 			}
 #ifdef SERIAL_CTS
 			if (BUF_FREE(rx) < SERIAL_CTS_THRESHOLD_LOW) {
