@@ -745,11 +745,6 @@ csma_init(void)
 	// not changing the round timings
 	packet_latency += ((settings.preamble_length-10)/2) * ticks_per_byte;
 
-	// tell the packet subsystem our max packet size, which it
-	// needs to know for MAVLink packet boundary detection
-	// PGS: With CSMA, this is always the maximum
-	packet_set_max_xmit(max_data_packet_length);
-
 }
 
 
