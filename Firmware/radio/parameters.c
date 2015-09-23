@@ -45,10 +45,6 @@
 #include "crc.h"
 #include <flash_layout.h>
 
-#ifdef INCLUDE_AES
-#include "AES/aes.h"
-#endif // INCLUDE_AES
-
 /// In-ROM parameter info table.
 ///
 __code const struct parameter_info {
@@ -74,10 +70,7 @@ __code const struct parameter_info {
 	{"DUTY_CYCLE",		100},
 	{"LBT_RSSI",		0},
 	{"MANCHESTER",		0},
-	{"RTSCTS",		0},
-#ifdef INCLUDE_AES
-	{"ENCRYPTION_LEVEL", 0}, // no Enycryption (0), 128 or 256 bit key
-#endif
+	{"RTSCTS",		0}
 };
 
 /// In-RAM parameter store.
@@ -107,18 +100,7 @@ typedef char r2pCheck[(PARAM_FLASH_END < PIN_FLASH_START) ? 0 : -1];
 #endif // PIN_MAX
 
 // Place the start away from the other params to allow for expantion 2<<7 +128 = 384
-#ifdef INCLUDE_AES
-// Holds the encrpytion string
-__xdata uint8_t encryption_key[32];
-
-#define PARAM_E_FLASH_START   (2<<7) + 128
-#define PARAM_E_FLASH_END     (PARAM_E_FLASH_START + sizeof(encryption_key) + 3)
-
-// Check to make sure the End of the pins and the beginning of encryption dont overlap
-typedef char p2eCheck[(PIN_FLASH_END < PARAM_E_FLASH_START) ? 0 : -1];
-#else
 #define PARAM_E_FLASH_END PIN_FLASH_END
-#endif // INCLUDE_AES
 
 
 // Check to make sure we dont overflow off the page
@@ -302,11 +284,6 @@ __critical {
                 return false;
 #endif
 
-  // read and verify encryption params
-#ifdef INCLUDE_AES
-  if(!read_params((__xdata uint8_t *)encryption_key, PARAM_E_FLASH_START+1, sizeof(encryption_key)))
-    return false;
-#endif // INCLUDE_AES
         return true;
 }
 
@@ -331,12 +308,6 @@ __critical {
   flash_write_scratch(PIN_FLASH_START, sizeof(pin_values));
         write_params((__xdata uint8_t *)pin_values, PIN_FLASH_START+1, sizeof(pin_values));
 #endif
-
-  // write encryption params
-#ifdef INCLUDE_AES
-  flash_write_scratch(PARAM_E_FLASH_START, sizeof(encryption_key));
-  write_params((__xdata uint8_t *)encryption_key, PARAM_E_FLASH_START+1, sizeof(encryption_key));
-#endif // INCLUDE_AES
 
 }
 
@@ -494,109 +465,3 @@ calibration_lock() __reentrant
 }
 #endif // BOARD_rfd900a/p
 
-#ifdef INCLUDE_AES
-// Used to convert individial Hex digits into Integers
-//
-uint8_t read_hex_nibble(const uint8_t c) __reentrant
-{
-        if ((c >='0') && (c <= '9'))
-        {
-                return c - '0';
-        }
-        else if ((c >='A') && (c <= 'F'))
-        {
-                return c - 'A' + 10;
-        }
-        else if ((c >='a') && (c <= 'f'))
-        {
-                return c - 'a' + 10;
-        }
-        else
-        {
-                // printf("[%u] read_hex_nibble: Error char not in supported range",nodeId);
-                return 0;
-        }
-}
-
-
-/// Convert string to hex codes
-///
-void convert_to_hex(__xdata unsigned char *str_in, __xdata unsigned char *str_out,      __pdata uint8_t key_length)
-{
-        __pdata uint8_t i, num;
-
-        for (i=0;i<key_length;i++) {
-                num = read_hex_nibble(str_in[2 * i])<<4;
-                num += read_hex_nibble(str_in[2 * i + 1]);
-                str_out[i] = num;
-        }
-}
-
-/// Set default encryption key
-//
-void param_set_default_encryption_key(__pdata uint8_t key_length)
-{
-        __pdata uint8_t i;
-        __xdata uint8_t b[] = {0x62};
-
-        for (i=0;i< key_length;i++) {
-                // Set default key to b's
-                memcpy(&encryption_key[i], &b, 1);
-        }
-}
-
-/// set the encryption key
-///
-/// Note: There is a reliance on the encryption level as this determines
-///       how many characters we need. So we need to set ATS16 first, THEN
-///       save and then Set the encryption key.
-///
-bool
-param_set_encryption_key(__xdata unsigned char *key)
-{
-        __pdata uint8_t len, key_length;
-
-  // Use the new encryption level to help with key changes before reboot
-  // Deduce key length (bytes) from level 1 -> 16, 2 -> 24, 3 -> 32
-  key_length = AES_KEY_LENGTH(param_get(PARAM_ENCRYPTION));
-  len = strlen(key);
-  // If not enough characters (2 char per byte), then set default
-  if (len < 2 * key_length ) {
-    param_set_default_encryption_key(key_length);
-    //printf("%s\n",key);
-    printf("ERROR - Key length:%u, Required %u\n",len, 2 * key_length);
-    return true;
-  } else {
-    // We have sufficient characters for the encryption key.
-    // If too many characters, then it will just ignore extra ones
-    printf("key len %d\n",key_length);
-    convert_to_hex(key, encryption_key, key_length);
-  }
-  
-  return true;
-}
-
-/// Print hex codes for given string
-///
-void
-print_encryption_key()
-{
-  __pdata uint8_t i;
-  __pdata uint8_t key_length = AES_KEY_LENGTH(param_get(PARAM_ENCRYPTION));
-  
-  for (i=0; i<key_length; i++) {
-    if (0xF >= encryption_key[i]) {
-      printf("0");
-    }
-                printf("%x",encryption_key[i]);
-        }
-        printf("\n");
-}
-
-/// get the encryption key
-///
-__xdata uint8_t* param_get_encryption_key()
-{
-        return encryption_key;
-}
-#endif // INCLUDE_AES

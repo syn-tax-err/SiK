@@ -41,10 +41,6 @@
 #include "csma.h"
 #include "timer.h"
 
-#ifdef INCLUDE_AES
-#include "AES/aes.h"
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Interrupt vector prototypes
 ///
@@ -69,9 +65,6 @@ extern void    T2_ISR(void)            __interrupt(INTERRUPT_TIMER2);
 /// @todo switch this and everything it calls to use another register bank?
 ///
 extern void    T3_ISR(void)            __interrupt(INTERRUPT_TIMER3);
-#ifdef INCLUDE_AES
-extern void    DMA_ISR(void)    __interrupt(INTERRUPT_DMA0);
-#endif // INCLUDE_AES
 
 //@}
 
@@ -141,13 +134,6 @@ main(void)
 	pins_user_init();
 #endif
        
-#ifdef INCLUDE_AES
-	// Initialise Encryption
-	if (! aes_init(param_get(PARAM_ENCRYPTION))) {
-		panic("failed to initialise aes");
-	}
-#endif // INCLUDE_AES
-	
 	csma_serial_loop();
 }
 

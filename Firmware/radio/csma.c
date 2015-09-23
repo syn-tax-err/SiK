@@ -40,6 +40,7 @@
 #include "csma.h"
 #include "timer.h"
 #include "packet.h"
+#include "golay23.h"
 #include "golay.h"
 #include "crc.h"
 

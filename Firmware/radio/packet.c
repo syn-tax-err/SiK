@@ -37,10 +37,6 @@
 #include "packet.h"
 #include "timer.h"
 
-#ifdef INCLUDE_AES
-#include "AES/aes.h"
-#endif
-
 #define MAVLINK_MSG_ID_X_SERVAL_SETUPRADIO 210
 #define MAVLINK_MSG_ID_X_SERVAL_RESULT 211
 // use 'ME' for Mesh Extender
@@ -223,22 +219,8 @@ uint8_t mavlink_frame(uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 	return last_sent_len;
 }
 
-#ifdef INCLUDE_AES
-__xdata uint8_t len_encrypted;
-#endif // INCLUDE_AES
-
 uint8_t encryptReturn(__xdata uint8_t *buf_out, __xdata uint8_t *buf_in, uint8_t buf_in_len)
 {
-#ifdef INCLUDE_AES
-  if (aes_get_encryption_level() > 0) {
-    if (aes_encrypt(buf_in, buf_in_len, buf_out, &len_encrypted) != 0)
-    {
-      panic("error while trying to encrypt data");
-    }
-    return len_encrypted;
-  }
-#endif // INCLUDE_AES
-  
   // if no encryption or not supported fall back to copy
   memcpy(buf_out, buf_in, buf_in_len);
   return buf_in_len;
@@ -249,17 +231,6 @@ uint8_t packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
 {
 	register uint16_t slen;
 
-#ifdef INCLUDE_AES
-	// Encryption takes 1 byte and is in multiples of 16.
-	// 16, 32, 48 etc, lets not send anything above 32 bytes back
-	// If you change this increase the buffer in serial.c serial_write_buf()
-	if (aes_get_encryption_level() > 0) {
-		if(max_xmit <= 16) return 0;
-		if(max_xmit <= 32) max_xmit = 15;
-		if(max_xmit > 31 ) max_xmit = 31;
-	}
-#endif // INCLUDE_AES
-	
 	if (injected_packet) {
 		// send a previously injected packet
 		slen = last_sent_len;

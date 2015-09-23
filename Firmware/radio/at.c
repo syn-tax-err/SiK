@@ -38,10 +38,6 @@
 #include "at.h"
 #include "board.h"
 
-#ifdef INCLUDE_AES
-#include "AES/aes.h"
-#endif
-
 // canary data for ram wrap. It is in at.c as the compiler
 // assigns addresses in alphabetial order and we want this at a low
 // address
@@ -430,21 +426,6 @@ at_ampersand(void)
 			at_error();
 		}
 		break;
-#ifdef INCLUDE_AES
-	case 'E':
-		switch (at_cmd[4]) {
-		case '?':
-			print_encryption_key();
-			return;
-			
-		case '=':
-			if (param_set_encryption_key((__xdata unsigned char *)&at_cmd[5])) {
-				at_ok();
-				return;
-			}
-			break;
-		}
-#endif // INCLUDE_AES		
 	default:
 		at_error();
 		break;
