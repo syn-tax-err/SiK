@@ -32,6 +32,7 @@
 #include "board.h"
 #include "radio.h"
 #include "timer.h"
+#include "golay23.h"
 #include "golay.h"
 #include "crc.h"
 #include "pins_user.h"
