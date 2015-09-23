@@ -69,7 +69,7 @@ extern __pdata uint8_t pdata_canary;
 /// optional features
 extern bool feature_golay;
 extern bool feature_opportunistic_resend;
-extern bool feature_mavlink_framing;
+extern uint8_t feature_mavlink_framing;
 extern bool feature_rtscts;
 
 /// System clock frequency
@@ -82,6 +82,12 @@ extern bool feature_rtscts;
 # define debug(fmt, args...)	printf_small(fmt "\n", ##args)
 #else
 # define debug(fmt, args...)
+#endif
+
+#ifdef CPU_SI1030
+#define RADIO_PAGE() SFRPAGE    = SPI1_PAGE
+#else
+#define RADIO_PAGE() SFRPAGE    = LEGACY_PAGE
 #endif
 
 // useful macro for array sizes
@@ -139,6 +145,9 @@ struct error_counts {
 	uint16_t serial_rx_overflow;    ///< count of serial receive overflows
 	uint16_t corrected_errors;      ///< count of words corrected by golay code
 	uint16_t corrected_packets;     ///< count of packets corrected by golay code
+#ifdef INCLUDE_AES
+       uint16_t crc_errors;            ///< count of crc errrors when AES in use>
+#endif // INCLUDE_AES
 };
 __pdata extern struct error_counts errors;
 
@@ -290,6 +299,17 @@ extern int16_t radio_temperature(void);
 #define MAX_PA_TEMPERATURE 100
 #endif
 
-extern void radio_set_diversity(bool enable);
+//-----------------------------------------------------------------------------
+// enum used for Antenna switching
+//-----------------------------------------------------------------------------
+enum DIVERSITY_Enum
+{
+  DIVERSITY_ENABLED = 0,          // 0x00
+  DIVERSITY_DISABLED,             // 0x01
+  DIVERSITY_ANT1,                 // 0x02
+  DIVERSITY_ANT2                  // 0x03
+};
+
+extern void radio_set_diversity(enum DIVERSITY_Enum state);
 
 #endif // _RADIO_H_

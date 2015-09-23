@@ -1,6 +1,6 @@
 // -*- Mode: C; c-basic-offset: 8; -*-
 //
-// Copyright (c) 2011 Michael Smith, All Rights Reserved
+// Copyright (c) 2013 Joe Turner, All Rights Reserved
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -27,24 +27,24 @@
 //
 
 ///
-/// @file	flash.h
-///		Prototypes for the flash interface.
+/// @file       aes.h
+///
+/// Definitions for the radio application AES
 ///
 
-// The Si1030 doesn't have a flash scratch page
-// so the read and write's are slightly diffrent
-#ifdef CPU_SI1030
-#define FLASH_ERASE_SCRATCH 0x03
-#define FLASH_WRITE_SCRATCH 0x01
-#define FLASH_READ_SCRATCH  0x00
-#define FLASH_DISABLE		0x00
-#else
-#define FLASH_ERASE_SCRATCH 0x07
-#define FLASH_WRITE_SCRATCH 0x05
-#define FLASH_READ_SCRATCH  0x04
-#define FLASH_DISABLE		0x00
-#endif
 
-extern void	flash_erase_scratch(void);
-extern uint8_t	flash_read_scratch(__pdata uint16_t address);
-extern void	flash_write_scratch(__pdata uint16_t address, __pdata uint8_t c);
+//=============================================================================
+// Function Prototypes
+//-----------------------------------------------------------------------------
+
+extern uint8_t aes_encrypt(__xdata unsigned char *in_str, uint8_t in_len, __xdata unsigned char *out_str, uint8_t *out_len);
+
+extern bool aes_init(uint8_t encryption_level);
+
+extern uint8_t aes_decrypt(__xdata unsigned char *in_str,  uint8_t in_len, __xdata unsigned char *out_str, uint8_t *out_len);
+
+extern uint8_t aes_get_encryption_level();
+
+void aes_set_encryption_level(uint8_t encryption);
+
+#define AES_KEY_LENGTH(_l)    8*(1 +(_l&0xf))
