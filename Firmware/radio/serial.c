@@ -55,12 +55,14 @@
 
 __xdata uint8_t rx_buf[RX_BUFF_MAX] = {0};
 __xdata uint8_t tx_buf[TX_BUFF_MAX] = {0};
+
+// TX gate / ! escape state
+extern bool last_was_bang=0;
+extern bool tx_buffered_data=0;
+
 // FIFO insert/remove pointers
 static volatile __pdata uint16_t				rx_insert, rx_remove;
 static volatile __pdata uint16_t				tx_insert, tx_remove;
-#ifdef CPU_SI1030
-static volatile __pdata uint16_t				encrypt_insert, encrypt_remove;
-#endif
 
 // count of number of bytes we are allowed to send due to a RTS low reading
 static uint8_t rts_count;
@@ -128,13 +130,49 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			// run the byte past the +++ detector
 			at_plus_detector(c);
 
-			// and queue it for general reception
-			if (BUF_NOT_FULL(rx)) {
-				BUF_INSERT(rx, c);
-			} else {
-				if (errors.serial_rx_overflow != 0xFFFF) {
-					errors.serial_rx_overflow++;
+			// PGS: To enforce packet boundaries where we want them, we escape
+			// '!'.  '!!' means send buffered serial data.  '!' followed by '.'
+			// inserts a '!' into the serial buffer.
+			if (c=='!') {
+				if (last_was_bang) {
+					tx_buffered_data=1;
+					last_was_bang=0;
+				} else {
+					last_was_bang=1;
 				}
+			} else if ((c=='H') && last_was_bang ) {
+				last_was_bang=0;
+				radio_set_transmit_power(25);
+			} else if ((c=='L') && last_was_bang ) {
+				last_was_bang=0;
+				radio_set_transmit_power(1);
+			} else if ((c=='v') && last_was_bang ) {
+				// Provide version info, to allow quick detection of CSMA
+				// firmware
+				putchar('1');
+			} else if ((c=='.') && last_was_bang ) {
+				last_was_bang=0;
+				// Insert escaped ! into serial RX buffer
+				if (BUF_NOT_FULL(rx)) {
+					BUF_INSERT(rx, '!');
+				} else {
+					if (errors.serial_rx_overflow != 0xFFFF) {
+						errors.serial_rx_overflow++;
+					}
+				}				
+			} else if (last_was_bang) {
+				// Unknown ! command
+				last_was_bang=0;
+				putchar('E');
+			} else {
+				// Character to put in TX buffer
+				if (BUF_NOT_FULL(rx)) {
+					BUF_INSERT(rx, c);
+				} else {
+					if (errors.serial_rx_overflow != 0xFFFF) {
+						errors.serial_rx_overflow++;
+					}
+				}				
 			}
 #ifdef SERIAL_CTS
 			if (BUF_FREE(rx) < SERIAL_CTS_THRESHOLD_LOW) {
@@ -197,11 +235,7 @@ serial_init(register uint8_t speed)
 	rx_insert = 0;
 	rx_remove = 0;
 	tx_insert = 0;
-  tx_remove = 0;
-#ifdef CPU_SI1030
-  encrypt_insert = 0;
-  encrypt_remove = 0;
-#endif
+	tx_remove = 0;
 	tx_idle = true;
 
 	// configure timer 1 for bit clock generation
@@ -253,91 +287,6 @@ _serial_write(register uint8_t c) __reentrant
 
 	ES0_RESTORE;
 }
-
-#ifdef INCLUDE_AES
-// If on appropriate CPU and encryption configured, then attempt to decrypt it
-bool
-decryptPackets(void)
-{
-  // Encrypted packets arn't bigger than 32 bytes
-  // Limited by packet.c packet_get_next()
-  static __pdata uint8_t len_decrypted;
-  static __xdata uint8_t decrypt_buf[32];
-  
-  if(BUF_NOT_EMPTY(encrypt) && aes_get_encryption_level() > 0)
-  {
-    if (encrypt_buf[encrypt_remove] == 0)
-    {
-      __critical {
-        encrypt_remove = 0;
-      }
-    }
-    if (aes_decrypt(&encrypt_buf[encrypt_remove+1], encrypt_buf[encrypt_remove], decrypt_buf, &len_decrypted) != 0) {
-      panic("error while trying to decrypt data");
-    }
-   
-    // Now send decrypted output to serial buffer
-    serial_write_buf(decrypt_buf, len_decrypted);
-
-    // zero the packet as we read it.
-    len_decrypted = encrypt_buf[encrypt_remove];
-    encrypt_buf[encrypt_remove] = 0;
-    
-    // printf("eb %u:%u!%u - ea ",encrypt_remove, encrypt_insert, len_decrypted);
-    __critical {
-      encrypt_remove += len_decrypted + 1;
-      if (encrypt_remove >= sizeof(encrypt_buf)) {
-        encrypt_remove = 0;
-      }
-    }
-   // printf("%u\n",encrypt_remove);
-    return true;
-  }
-  return false;
-}
-
-void
-serial_decrypt_buf(__xdata uint8_t * buf, __pdata uint8_t count)
-{
-  __pdata uint16_t space;
-
-  if (aes_get_encryption_level() > 0) {
-    // write to the end of the ring buffer or front if we dont have space
-    if (count > sizeof(encrypt_buf) - (encrypt_insert + 1)) {
-      encrypt_insert = 0;
-    }
-
-    // If we don't have enough space at all then exit
-    space = encrypt_buffer_write_space();
-    if (count > space) {
-            if (errors.serial_tx_overflow != 0xFFFF) {
-                    errors.serial_tx_overflow++;
-            }
-            // Have to return, it is ALL or NOTHING. Can't decrypt part of a packet
-            return;
-    }
-
-
-
-    // Insert the length of the packet
-    encrypt_buf[encrypt_insert] = count;
-    //printf("ic %u \n",count, encrypt_insert);
-    memcpy(&encrypt_buf[encrypt_insert+1], buf, count);
-    
-    __critical {
-      encrypt_insert += count + 1;
-      if (encrypt_insert >= sizeof(encrypt_buf)) {
-        encrypt_insert -= sizeof(encrypt_buf);
-      }
-    }
-    // Zero the next packet for the parser.
-    encrypt_buf[encrypt_insert] = 0;
-  }
-  else {
-    serial_write_buf(buf, count);
-  }
-}
-#endif // INCLUDE_AES
 
 // write as many bytes as will fit into the serial transmit buffer
 // if encryption turned on, decrypt the packet.
@@ -618,42 +567,3 @@ void serial_device_set_speed(register uint8_t speed)
 	packet_set_serial_speed(speed*125UL);	
 }
 
-
-#ifdef INCLUDE_AES
-/// Indicate if encrypt buffer is starting to get too full
-//
-bool
-encrypt_buffer_getting_full()
-{
-	if (BUF_FREE(encrypt) < encrypt_buff_start) {
-           return true;
-        }
-
- return false;
-}
-
-
-/// Indicate if encrypt before is getting back to a more comfortable lower state
-//
-bool
-encrypt_buffer_getting_empty()
-{
-	if (BUF_FREE(encrypt) > encrypt_buff_end) {
-           return true;
-        }
- return false;
-}
-
-
-/// Return amount of space left in buffer
-//
-uint16_t
-encrypt_buffer_write_space()
-{
-	register uint16_t ret;
-        ret = BUF_FREE(encrypt);
-        return ret;
-}
-
-
-#endif // INCLUDE_AES
