@@ -33,14 +33,10 @@
 ///
 
 #include "radio.h"
-#include "tdm.h"
+#include "csma.h"
 #include "flash_layout.h"
 #include "at.h"
 #include "board.h"
-
-#ifdef INCLUDE_AES
-#include "AES/aes.h"
-#endif
 
 // canary data for ram wrap. It is in at.c as the compiler
 // assigns addresses in alphabetial order and we want this at a low
@@ -220,7 +216,7 @@ at_command(void)
 		if ((at_cmd_len >= 2) && (at_cmd[0] == 'R') && (at_cmd[1] == 'T')) {
 			// remote AT command - send it to the tdm
 			// system to send to the remote radio
-			tdm_remote_at();
+			csma_remote_at();
 			at_cmd_len = 0;
 			at_cmd_ready = false;
 			return;
@@ -341,11 +337,8 @@ at_i(void)
   case '5':
     print_ID_vals(' ', PARAM_MAX, param_name, param_get);
     return;
-  case '6':
-    tdm_report_timing();
-    return;
   case '7':
-    tdm_show_rssi();
+    csma_show_rssi();
     return;
   default:
     at_error();
@@ -419,10 +412,6 @@ at_ampersand(void)
 		at_error();
 		break;
 
-	case 'P':
-		tdm_change_phase();
-		break;
-
 	case 'T':
 		// enable test modes
 		if (!strcmp(at_cmd + 4, "")) {
@@ -431,9 +420,6 @@ at_ampersand(void)
 		} else if (!strcmp(at_cmd + 4, "=RSSI")) {
 			// display RSSI stats
 			at_testmode ^= AT_TEST_RSSI;
-		} else if (!strcmp(at_cmd + 4, "=TDM")) {
-			// display TDM debug
-			at_testmode ^= AT_TEST_TDM;
 		} else {
 			at_error();
 		}

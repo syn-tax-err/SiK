@@ -37,9 +37,13 @@
 #include "packet.h"
 #include "timer.h"
 
-#ifdef INCLUDE_AES
-#include "AES/aes.h"
-#endif
+#define MAVLINK_MSG_ID_X_SERVAL_SETUPRADIO 210
+#define MAVLINK_MSG_ID_X_SERVAL_RESULT 211
+// use 'ME' for Mesh Extender
+#define RADIO_SOURCE_SYSTEM 'M'
+#define RADIO_SOURCE_COMPONENT 'E'
+
+extern __xdata uint8_t pbuf[MAX_PACKET_LENGTH];
 
 static __bit last_sent_is_resend;
 static __bit last_sent_is_injected;
@@ -48,8 +52,8 @@ static __bit force_resend;
 
 static __xdata uint8_t last_received[MAX_PACKET_LENGTH];
 static __xdata uint8_t last_sent[MAX_PACKET_LENGTH];
-static __xdata uint8_t last_sent_len;
-static __xdata uint8_t last_recv_len;
+static __pdata uint8_t last_sent_len;
+static __pdata uint8_t last_recv_len;
 
 // serial speed in 16usecs/byte
 static __pdata uint16_t serial_rate;
@@ -71,8 +75,12 @@ static bool injected_packet;
 
 // have we seen a mavlink packet?
 bool seen_mavlink;
+bool using_mavlink_10;
 
 #define PACKET_RESEND_THRESHOLD 32
+
+#define MAVLINK09_STX 85 // 'U'
+#define MAVLINK10_STX 254
 
 // check if a buffer looks like a MAVLink heartbeat packet - this
 // is used to determine if we will inject RADIO status MAVLink
@@ -80,84 +88,99 @@ bool seen_mavlink;
 // monitoring of link quality
 static void check_heartbeat(__xdata uint8_t * __pdata buf)
 {
-	if (buf[0] == MAVLINK10_STX &&
-		buf[1] == 9 && buf[5] == 0) {
-		// looks like a MAVLink 1.0 heartbeat
+	if (buf[0] == MAVLINK09_STX &&
+	    buf[1] == 3 && buf[5] == 0) {
+		// looks like a MAVLink 0.9 heartbeat
+		using_mavlink_10 = false;
 		seen_mavlink = true;
+	} else if (buf[0] == MAVLINK10_STX &&
+		   buf[1] == 9 && buf[5] == 0) {
+		// looks like a MAVLink 1.0 heartbeat
+		using_mavlink_10 = true;
+		seen_mavlink = true;
+	} else if (buf[0] == MAVLINK10_STX &&
+		   // 226 is arbitrarily chosen unallocated MAVLink message ID
+		   // used to indicate this set radio parameters command
+		   buf[1] == 26 && buf[5] == MAVLINK_MSG_ID_X_SERVAL_SETUPRADIO &&
+		   // some magic bytes in other MAVLink fields
+		   buf[2] == 0xBE && buf[3] == 0xEF && buf[4] == 0xEE ) {
+		// looks like a Serval Mesh Extender Radio Configure packet
+		// This takes a while to run, and will confuse the TDM, 
+		// but that's okay, because it only needs to happen once.
+		bool reject=false;
+		uint32_t value;
+		// NETID low byte		
+		// NETID high byte		
+		value=(buf[6]<<8)||buf[7];
+		if (param_set(PARAM_NETID,value)) reject=true;
+		// TX power
+		if (param_set(PARAM_TXPOWER,buf[8])) reject=true;
+		// Duty cycle
+		if (param_set(PARAM_DUTY_CYCLE,buf[9])) reject=true;		
+		// ECC enable
+		if (param_set(PARAM_ECC,buf[10])) reject=true;
+		// Air speed
+		if (param_set(PARAM_AIR_SPEED,buf[11])) reject=true;
+		// UART speed
+		if (param_set(PARAM_SERIAL_SPEED,buf[12])) reject=true;
+		// Opportunistic resend
+		if (param_set(PARAM_OPPRESEND,buf[13])) reject=true;
+		// unused (was Number of channels)
+		// if (param_set(PARAM_NUM_CHANNELS,buf[14])) reject=true;
+		// MAVLink enable
+		if (param_set(PARAM_MAVLINK,buf[15])) reject=true;
+		// LBT RSSI
+		if (param_set(PARAM_LBT_RSSI,buf[16])) reject=true;
+		// Manchester encoding
+		if (param_set(PARAM_MANCHESTER,buf[17])) reject=true;
+		// channel frequency
+		value=buf[18]; value=value<<8;
+		value=buf[19]; value=value<<8;
+		value=buf[20]; value=value<<8;
+		value=buf[21]; 
+		if (param_set(PARAM_FREQ,value)) reject=true;
+		// unused (was upper frequency)
+		value=buf[22]; value=value<<8;
+		value=buf[23]; value=value<<8;
+		value=buf[24]; value=value<<8;
+		value=buf[25]; 
+
+		if (!reject) param_save();
+
+		// Send response
+		pbuf[0] = using_mavlink_10?254:'U';
+		pbuf[1] = 2;
+		pbuf[2] = 0xff;
+		pbuf[3] = RADIO_SOURCE_SYSTEM;
+		pbuf[4] = RADIO_SOURCE_COMPONENT;
+		pbuf[5] = MAVLINK_MSG_ID_X_SERVAL_RESULT;
+		
+		pbuf[6]=MAVLINK_MSG_ID_X_SERVAL_SETUPRADIO;
+		pbuf[7]=reject?0xff:0x00;
+		
+		if (serial_write_space() < 6+2+2) {
+			// don't cause an overflow
+			return;
+		}
+		
+		serial_write_buf(pbuf, 6+2+2);			
+
 	}
 }
-
-#define MSG_TYP_RC_OVERRIDE 70
-#define MSG_LEN_RC_OVERRIDE (9 * 2)
-
-/// Return the offset of any high priority packet (so we can ensure that this packet goes out in the next
-/// tx window
-static 
-int16_t extract_hipri(uint8_t max_xmit)
-{
-	__xdata uint16_t slen = serial_read_available();
-	__xdata uint16_t offset = 0;
-	__xdata int16_t high_offset = -1;
-
-	// Walk the serial buffer to find the _last_ high pri packet
-	while (slen >= 8) {
-		register uint8_t c = serial_peekx(offset);
-		if (c != MAVLINK10_STX) {
-			// we've lost mavlink framing - stop scanning for this window
-			break;			
-		}
-		c = serial_peekx(offset + 1);
-		if (c >= 255 - 8 || 
-			c+8 > max_xmit - last_sent_len) {
-			// it won't fit
-			break;
-		}
-		if (c+8 > slen) {
-			// we don't have the full MAVLink packet in
-			// the serial buffer
-			break;
-		}
-
-		if(serial_peekx(offset + 5) == MSG_TYP_RC_OVERRIDE && c == MSG_LEN_RC_OVERRIDE) {
-			// if(high_offset != -1) printf("found 2nd\r\n"); else printf("found rc\r\n");
-			high_offset = offset;
-		}
-
-		c += 8;
-		slen -= c;
-		offset += c;
-	}
-
-	return high_offset;
-}
-
-#define MAVLINK_FRAMING_DISABLED 0
-#define MAVLINK_FRAMING_SIMPLE 1
-#define MAVLINK_FRAMING_HIGHPRI 2
 
 // return a complete MAVLink frame, possibly expanding
 // to include other complete frames that fit in the max_xmit limit
 static 
 uint8_t mavlink_frame(uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 {
-	__data uint16_t slen, offset = 0, high_offset;
+	__data uint16_t slen;
 
-	//
-	// There is already a packet sitting waiting here
-	//
-	// but this optimization is redundant with the loop below.  By letting the very slightly
-	// more expensive version its thing we can ensure we skip _all_ redundant rc_override msgs
-#if 0
 	serial_read_buf(last_sent, mav_pkt_len);
 	last_sent_len = mav_pkt_len;
 	memcpy(buf, last_sent, last_sent_len);
-	check_heartbeat(buf);
-#else
-	last_sent_len = 0;
-#endif
 	mav_pkt_len = 0;
 
-	high_offset = (feature_mavlink_framing == MAVLINK_FRAMING_HIGHPRI) ? extract_hipri(max_xmit) : -1;
+	check_heartbeat(buf);
 
 	slen = serial_read_available();
 
@@ -165,13 +188,13 @@ uint8_t mavlink_frame(uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 	// buffer that we can fit in this packet
 	while (slen >= 8) {
 		register uint8_t c = serial_peek();
-		if (c != MAVLINK10_STX) {
+		if (c != MAVLINK09_STX && c != MAVLINK10_STX) {
 			// its not a MAVLink packet
 			return last_sent_len;			
 		}
 		c = serial_peek2();
 		if (c >= 255 - 8 || 
-			c+8 > max_xmit - last_sent_len) {
+		    c+8 > max_xmit - last_sent_len) {
 			// it won't fit
 			break;
 		}
@@ -181,106 +204,60 @@ uint8_t mavlink_frame(uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 			break;
 		}
 
-		// If we are using the special highpri mode, we might skip some override packets
-		if(high_offset != -1 && high_offset != offset && serial_peekx(5) == MSG_TYP_RC_OVERRIDE && c == MSG_LEN_RC_OVERRIDE) {
-			// printf("skipping rc\r\n");
-			c += 8;
-		}
-		else {
-			c += 8;
+		c += 8;
 
-			// we can add another MAVLink frame to the packet
-			serial_read_buf(&last_sent[last_sent_len], c);
-			memcpy(&buf[last_sent_len], &last_sent[last_sent_len], c);
+		// we can add another MAVLink frame to the packet
+		serial_read_buf(&last_sent[last_sent_len], c);
+		memcpy(&buf[last_sent_len], &last_sent[last_sent_len], c);
 
-			check_heartbeat(buf+last_sent_len);
-		}
+		check_heartbeat(buf+last_sent_len);
 
 		last_sent_len += c;
 		slen -= c;
-		offset += c;
 	}
 
 	return last_sent_len;
 }
 
-#ifdef INCLUDE_AES
-__xdata uint8_t len_encrypted;
-#endif // INCLUDE_AES
-
-uint8_t encryptReturn(__xdata uint8_t *buf_out, __xdata uint8_t *buf_in, uint8_t buf_in_len)
-{
-#ifdef INCLUDE_AES
-  if (aes_get_encryption_level() > 0) {
-    if (aes_encrypt(buf_in, buf_in_len, buf_out, &len_encrypted) != 0)
-    {
-      panic("error while trying to encrypt data");
-    }
-    return len_encrypted;
-  }
-#endif // INCLUDE_AES
-  
-  // if no encryption or not supported fall back to copy
-  memcpy(buf_out, buf_in, buf_in_len);
-  return buf_in_len;
-}
 
 // return the next packet to be sent
 uint8_t
-packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
+packet_get_next(register uint8_t max_xmit, __xdata uint8_t * __pdata buf)
 {
 	register uint16_t slen;
 
-#ifdef INCLUDE_AES
-  // Encryption takes 1 byte and is in multiples of 16.
-  // 16, 32, 48 etc, lets not send anything above 32 bytes back
-  // If you change this increase the buffer in serial.c serial_write_buf()
-  if (aes_get_encryption_level() > 0) {
-    if(max_xmit <= 16) return 0;
-    if(max_xmit <= 32) max_xmit = 15;
-    if(max_xmit > 31 ) max_xmit = 31;
-  }
-#endif // INCLUDE_AES
-  
 	if (injected_packet) {
 		// send a previously injected packet
 		slen = last_sent_len;
-
-		// sending these injected packets at full size doesn't
-		// seem to work well ... though I don't really know why!
-		if (max_xmit > 32) {
-   		    max_xmit = 32;
-		}
-
 		if (max_xmit < slen) {
 			// send as much as we can
- 		        last_sent_len = slen - max_xmit;
-   		        slen = encryptReturn(buf, last_sent, max_xmit);
-
-			memcpy(last_sent, &last_sent[max_xmit], last_sent_len);
+			memcpy(buf, last_sent, max_xmit);
+			memcpy(last_sent, &last_sent[max_xmit], slen - max_xmit);
+			last_sent_len = slen - max_xmit;
 			last_sent_is_injected = true;
-			return slen;
+			return max_xmit;
 		}
 		// send the rest
+		memcpy(buf, last_sent, last_sent_len);
 		injected_packet = false;
 		last_sent_is_injected = true;
-		return encryptReturn(buf, last_sent, last_sent_len);
+		return last_sent_len;
 	}
-
 	last_sent_is_injected = false;
 
 	slen = serial_read_available();
 	if (force_resend ||
-			(feature_opportunistic_resend &&
-			 last_sent_is_resend == false && 
-			 last_sent_len != 0 && 
-			 slen < PACKET_RESEND_THRESHOLD)) {
+	    (feature_opportunistic_resend &&
+	     last_sent_is_resend == false && 
+	     last_sent_len != 0 && 
+	     slen < PACKET_RESEND_THRESHOLD)) {
 		if (max_xmit < last_sent_len) {
 			return 0;
 		}
 		last_sent_is_resend = true;
 		force_resend = false;
-		return encryptReturn(buf, last_sent, last_sent_len);
+		memcpy(buf, last_sent, last_sent_len);
+		return last_sent_len;
 	}
 
 	last_sent_is_resend = false;
@@ -301,10 +278,12 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
 	if (!feature_mavlink_framing) {
 		// simple framing
 		if (slen > 0 && serial_read_buf(buf, slen)) {
+			memcpy(last_sent, buf, slen);
 			last_sent_len = slen;
-      return encryptReturn(last_sent, buf, slen);
+		} else {
+			last_sent_len = 0;
 		}
-    return 0;
+		return last_sent_len;
 	}
 
 	// try to align packet boundaries with MAVLink packets
@@ -314,9 +293,10 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
 		if (slen == 1) {
 			if ((uint16_t)(timer2_tick() - mav_pkt_start_time) > mav_pkt_max_time) {
 				// we didn't get the length byte in time
-				last_sent[last_sent_len++] = serial_read(); // Send the STX
+				last_sent[last_sent_len++] = serial_read();
+				memcpy(buf, last_sent, last_sent_len);				
 				mav_pkt_len = 0;
-				return encryptReturn(buf, last_sent, last_sent_len);
+				return last_sent_len;
 			}
 			// still waiting ....
 			return 0;
@@ -334,8 +314,9 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
 				// it. Send what we have now.
 				serial_read_buf(last_sent, slen);
 				last_sent_len = slen;
+				memcpy(buf, last_sent, last_sent_len);
 				mav_pkt_len = 0;
-				return encryptReturn(buf, last_sent, last_sent_len);
+				return last_sent_len;
 			}
 			// leave it in the serial buffer till we have the
 			// whole MAVLink packet			
@@ -345,11 +326,10 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
 		// the whole of the MAVLink packet is available
 		return mavlink_frame(max_xmit, buf);
 	}
-
-		// We are now looking for a new packet (mav_pkt_len == 0)
+		
 	while (slen > 0) {
 		register uint8_t c = serial_peek();
-		if (c == MAVLINK10_STX) {
+		if (c == MAVLINK09_STX || c == MAVLINK10_STX) {
 			if (slen == 1) {
 				// we got a bare MAVLink header byte
 				if (last_sent_len == 0) {
@@ -367,7 +347,7 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
 			    mav_pkt_len+8 > mav_max_xmit) {
 				// its too big for us to cope with
 				mav_pkt_len = 0;
-				last_sent[last_sent_len++] = serial_read(); // Send the STX and try again (we will lose framing)
+				last_sent[last_sent_len++] = serial_read();
 				slen--;				
 				continue;
 			}
@@ -380,9 +360,10 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
 				// send what we've got so far,
 				// and send the MAVLink payload
 				// in the next packet
+				memcpy(buf, last_sent, last_sent_len);
 				mav_pkt_start_time = timer2_tick();
 				mav_pkt_max_time = mav_pkt_len * serial_rate;
-				return encryptReturn(buf, last_sent, last_sent_len);
+				return last_sent_len;
 			} else if (mav_pkt_len > slen) {
 				// the whole MAVLink packet isn't in
 				// the serial buffer yet. 
@@ -390,7 +371,6 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
 				mav_pkt_max_time = mav_pkt_len * serial_rate;
 				return 0;					
 			} else {
-// TODO FIX THIS FOR ENCRYPT
 				// the whole packet is there
 				// and ready to be read
 				return mavlink_frame(max_xmit, buf);
@@ -400,7 +380,9 @@ packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
 			slen--;
 		}
 	}
-	return encryptReturn(buf, last_sent, last_sent_len);
+
+	memcpy(buf, last_sent, last_sent_len);
+	return last_sent_len;
 }
 
 // return true if the packet currently being sent
@@ -443,7 +425,7 @@ packet_set_serial_speed(uint16_t speed)
 
 // determine if a received packet is a duplicate
 bool 
-packet_is_duplicate(uint8_t len, __xdata uint8_t *buf, bool is_resend)
+packet_is_duplicate(uint8_t len, __xdata uint8_t * __pdata buf, bool is_resend)
 {
 	if (!is_resend) {
 		memcpy(last_received, buf, len);
@@ -451,12 +433,10 @@ packet_is_duplicate(uint8_t len, __xdata uint8_t *buf, bool is_resend)
 		last_recv_is_resend = false;
 		return false;
 	}
-
-	// We are now looking at a packet with the resend bit set
 	if (last_recv_is_resend == false && 
-			len == last_recv_len &&
-			memcmp(last_received, buf, len) == 0) {
-		last_recv_is_resend = false;  // FIXME - this has no effect
+	    len == last_recv_len &&
+	    memcmp(last_received, buf, len) == 0) {
+		last_recv_is_resend = false;
 		return true;
 	}
 #if 0
@@ -471,7 +451,7 @@ packet_is_duplicate(uint8_t len, __xdata uint8_t *buf, bool is_resend)
 
 // inject a packet to send when possible
 void 
-packet_inject(__xdata uint8_t *buf, __pdata uint8_t len)
+packet_inject(__xdata uint8_t * __pdata buf, __pdata uint8_t len)
 {
 	if (len > sizeof(last_sent)) {
 		len = sizeof(last_sent);
