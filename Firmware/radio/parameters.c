@@ -40,7 +40,7 @@
 ///
 
 #include "radio.h"
-#include "tdm.h"
+#include "csma.h"
 #include "crc.h"
 #include <flash_layout.h>
 
@@ -55,24 +55,17 @@ __code const struct parameter_info {
 	param_t		default_value;
 } parameter_info[PARAM_MAX] = {
 	{"FORMAT",         PARAM_FORMAT_CURRENT},
-	{"SERIAL_SPEED",   57}, // match APM default of 57600
-	{"AIR_SPEED",      64}, // relies on MAVLink flow control
-	{"NETID",          25},
+	{"SERIAL_SPEED",   230}, // match APM default of 57600
+	{"AIR_SPEED",      128}, // relies on MAVLink flow control
+	{"NETID",          0x4110},
 	{"TXPOWER",        20},
 	{"ECC",             0},
-	{"MAVLINK",         1},
 	{"OPPRESEND",       0},
-	{"MIN_FREQ",        0},
-	{"MAX_FREQ",        0},
-	{"NUM_CHANNELS",    0},
+	{"FREQ",            923000},
 	{"DUTY_CYCLE",    100},
 	{"LBT_RSSI",        0},
 	{"MANCHESTER",      0},
 	{"RTSCTS",          0},
-  {"MAX_WINDOW",    131},
-#ifdef INCLUDE_AES
-  {"ENCRYPTION_LEVEL", 0}, // no Enycryption (0), 128 or 256 bit key
-#endif
 };
 
 /// In-RAM parameter store.
@@ -154,19 +147,6 @@ param_check(__pdata enum ParamID id, __data uint32_t val)
 			return false;
 		break;
 
-	case PARAM_MAVLINK:
-		if (val > 2)
-			return false;
-		break;
-
-	case PARAM_MAX_WINDOW:
-		// 131 milliseconds == 0x1FFF 16 usec ticks,
-		// which is the maximum we can handle with a 13
-		// bit trailer for window remaining
-		if (val > 131)
-			return false;
-		break;
-
 	default:
 		// no sanity check for this value
 		break;
@@ -202,11 +182,6 @@ param_set(__data enum ParamID param, __pdata param_t value)
 			value = constrain(value, 25, 220);
 		}
 		lbt_rssi = value;
-		break;
-
-	case PARAM_MAVLINK:
-		feature_mavlink_framing = (uint8_t) value;
-		value = feature_mavlink_framing;
 		break;
 
 	case PARAM_OPPRESEND:

@@ -52,19 +52,12 @@ enum ParamID {
 	PARAM_NETID,			// network ID
 	PARAM_TXPOWER,			// transmit power (dBm)
 	PARAM_ECC,				// ECC using golay encoding
-	PARAM_MAVLINK,			// MAVLink framing, 0=ignore, 1=use, 2=rc-override
 	PARAM_OPPRESEND,		// opportunistic resend
-	PARAM_MIN_FREQ,			// min frequency in MHz
-	PARAM_MAX_FREQ,			// max frequency in MHz
-	PARAM_NUM_CHANNELS,		// number of hopping channels
+	PARAM_FREQ,			// channel frequency in MHz
 	PARAM_DUTY_CYCLE,		// duty cycle (percentage)
 	PARAM_LBT_RSSI,			// listen before talk threshold
 	PARAM_MANCHESTER,		// enable manchester encoding
 	PARAM_RTSCTS,			// enable hardware flow control
-	PARAM_MAX_WINDOW,		// The maximum window size allowed
-#ifdef INCLUDE_AES
-  PARAM_ENCRYPTION,     // no Enycryption (0), 128 or 256 bit key
-#endif
 	PARAM_MAX				// must be last
 };
 

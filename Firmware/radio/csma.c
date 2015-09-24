@@ -394,8 +394,7 @@ csma_serial_loop(void)
 				if (trailer.command == 1) {
 					handle_at_command(len);
 				} else {		
-					if (!at_mode_active &&
-					    !packet_is_duplicate(len, pbuf, trailer.resend)) {
+					if (!at_mode_active) {
 						// PGS: The following framing allows servald and friends to accurately identify the
 						// framing of a packet
 						// Indicate radio frame here, even if frame is empty.

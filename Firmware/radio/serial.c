@@ -36,10 +36,6 @@
 #include "serial.h"
 #include "packet.h"
 
-#ifdef CPU_SI1030
-#include "AES/aes.h"
-#endif 
-
 // Serial rx/tx buffers.
 //
 // Note that the rx buffer is much larger than you might expect
@@ -52,9 +48,6 @@
 #ifdef CPU_SI1030
 #define RX_BUFF_MAX 1024 //2048
 #define TX_BUFF_MAX 1024
-#define ENCRYPT_BUFF_MAX 17*60 // 16 bit encrypted packets plus one for size
-static __pdata uint16_t encrypt_buff_start = 400; // Start decrypting more to clear buffer
-static __pdata uint16_t encrypt_buff_end = 500; // End our quick buffer clear
 #else
 #define RX_BUFF_MAX 1850
 #define TX_BUFF_MAX 645
@@ -62,9 +55,6 @@ static __pdata uint16_t encrypt_buff_end = 500; // End our quick buffer clear
 
 __xdata uint8_t rx_buf[RX_BUFF_MAX] = {0};
 __xdata uint8_t tx_buf[TX_BUFF_MAX] = {0};
-#ifdef INCLUDE_AES
-__xdata uint8_t encrypt_buf[ENCRYPT_BUFF_MAX] = {0};
-#endif // INCLUDE_AES
 // FIFO insert/remove pointers
 static volatile __pdata uint16_t				rx_insert, rx_remove;
 static volatile __pdata uint16_t				tx_insert, tx_remove;
@@ -548,6 +538,13 @@ serial_read_space(void)
 	space = (100 * (space/8)) / (sizeof(rx_buf)/8);
 	return space;
 }
+
+uint16_t
+serial_read_space_bytes(void)
+{
+        return sizeof(rx_buf) - serial_read_available();
+}
+
 
 void
 putchar(char c) __reentrant

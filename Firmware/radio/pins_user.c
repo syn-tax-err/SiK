@@ -33,7 +33,7 @@
 ///
 
 #include "radio.h"
-#include "tdm.h"
+#include "csma.h"
 
 #if PIN_MAX > 0
 
