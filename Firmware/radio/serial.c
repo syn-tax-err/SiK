@@ -142,10 +142,10 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				}
 			} else if ((c=='H') && last_was_bang ) {
 				last_was_bang=0;
-				radio_set_transmit_power(25);
+				param_set(PARAM_TXPOWER,25);
 			} else if ((c=='L') && last_was_bang ) {
 				last_was_bang=0;
-				radio_set_transmit_power(1);
+				param_set(PARAM_TXPOWER,1);
 			} else if ((c=='v') && last_was_bang ) {
 				// Provide version info, to allow quick detection of CSMA
 				// firmware
