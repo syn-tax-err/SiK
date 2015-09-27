@@ -27,8 +27,9 @@
 # Makefile for the Si1000 radio application
 #
 
-VERSION_MAJOR	 =	1
-VERSION_MINOR	 =	13
+# Use major version nummbers 101 and up for CSMA firmware.
+VERSION_MAJOR	 =	101
+VERSION_MINOR	 =	14
 
 PRODUCT		 =	radio~$(BOARD)
 PRODUCT_DIR	:=	$(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
