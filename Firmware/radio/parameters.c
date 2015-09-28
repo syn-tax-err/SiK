@@ -63,7 +63,7 @@ __code const struct parameter_info {
 	{"OPPRESEND",       0},
 	{"FREQ",            923000},
 	{"DUTY_CYCLE",    100},
-	{"LBT_RSSI",        0},
+	{"LBT_RSSI",        80},
 	{"MANCHESTER",      0},
 	{"RTSCTS",          0},
 };

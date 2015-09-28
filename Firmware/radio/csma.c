@@ -112,15 +112,6 @@ __pdata static uint16_t transmitted_ticks;
 /// the LDB (listen before talk) RSSI threshold
 __pdata uint8_t lbt_rssi;
 
-/// how long we have listened for for LBT
-__pdata static uint16_t lbt_listen_time;
-
-/// how long we have to listen for before LBT is OK
-__pdata static uint16_t lbt_min_time;
-
-/// random addition to LBT listen time (see European regs)
-__pdata static uint16_t lbt_rand;
-
 /// test data to display in the main loop. Updated when the tick
 /// counter wraps, zeroed when display has happened
 __pdata uint8_t test_display;
@@ -446,22 +437,6 @@ csma_serial_loop(void)
 			last_link_update = tnow;
 		}
 
-		if (lbt_rssi != 0) {
-			// implement listen before talk
-			if (radio_current_rssi() < lbt_rssi) {
-				lbt_listen_time += tdelta;
-			} else {
-				lbt_listen_time = 0;
-				if (lbt_rand == 0) {
-					lbt_rand = ((uint16_t)rand()) % lbt_min_time;
-				}
-			}
-			if (lbt_listen_time < lbt_min_time + lbt_rand) {
-				// we need to listen some more
-				continue;
-			}
-		}
-
 		if (!received_packet &&
 		    radio_preamble_detected() ||
 		    radio_receive_in_progress()) {
@@ -573,6 +548,12 @@ csma_serial_loop(void)
 					// transmit time to the number of ticks we've been transmitting
 					if ((duty_cycle - duty_cycle_offset) != 100) {
 						transmitted_ticks += flight_time_estimate(len+sizeof(trailer));
+					}
+
+					// Wait for channel to clear before sending
+					// (radio will be unresponsive until then)
+					while (radio_current_rssi() > lbt_rssi) {
+						continue;
 					}
 					
 					// start transmitting the packet
