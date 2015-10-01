@@ -432,8 +432,12 @@ radio_transmit_simple(__data uint8_t length, __xdata uint8_t * __pdata buf, __pd
 		tstart,
 		timer2_tick(),
 		(unsigned)length);
+	// We have seen radios get stuck repeatedly generating these errors.
+	// Presumably the fifo is all confused, so if we see a timeout, we should
+	// just reset the radio.
 	if (errors.tx_errors_timeout != 0xFFFF) {
 		errors.tx_errors_timeout++;
+		software_reset();
 	}
 
 	return false;
