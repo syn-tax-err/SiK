@@ -148,6 +148,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				param_set(PARAM_TXPOWER,1);
 			} else if ((c=='0') && last_was_bang ) {
 				// clear TX buffer
+				last_was_bang=0;
 				while (BUF_NOT_EMPTY(rx)) {
 					BUF_REMOVE(rx,c);
 				}
