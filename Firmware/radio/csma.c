@@ -473,45 +473,7 @@ csma_serial_loop(void)
 			// Ideally we should use a dynamic LBT regieme instead of a fixed point like this,
 			// but it will probably be okay.
 			if (statistics.average_noise < 70)
-				if ((!tx_buffered_data)&&send_statistics) {
-					// send a stats packet
-					// send a statistics packet
-					send_statistics = 0;
-					memcpy(pbuf, &statistics, sizeof(statistics));
-					len = sizeof(statistics);
-					
-					// mark a stats packet with a zero window
-					trailer.window = 0;
-					trailer.resend = 0;
-
-					// set right transmit channel
-					// PGS: Always channel 0 for CSMA
-					radio_set_channel(0);
-					
-					memcpy(&pbuf[len], &trailer, sizeof(trailer));
-									
-					// after sending a packet leave a bit of time before
-					// sending the next one. The receivers don't cope well
-					// with back to back packets
-					transmit_wait = packet_latency;
-					
-					// if we're implementing a duty cycle, add the
-					// transmit time to the number of ticks we've been transmitting
-					if ((duty_cycle - duty_cycle_offset) != 100) {
-						transmitted_ticks += flight_time_estimate(len+sizeof(trailer));
-					}
-					
-					// start transmitting the packet
-					radio_transmit(len + sizeof(trailer), pbuf, 10000 );
-					
-					// set right receive channel
-					// PGS: Always channel 0 for CSMA
-					radio_set_channel(0);
-					
-					// re-enable the receiver
-					radio_receiver_on();
-
-				} else if (tx_buffered_data) {
+				if (tx_buffered_data&&((radio_current_rssi() < lbt_rssi))) {
 					// get a packet from the serial port
 					len = packet_get_next(max_xmit, pbuf);
 					trailer.command = packet_is_injected();
@@ -550,12 +512,6 @@ csma_serial_loop(void)
 						transmitted_ticks += flight_time_estimate(len+sizeof(trailer));
 					}
 
-					// Wait for channel to clear before sending
-					// (radio will be unresponsive until then)
-					while (radio_current_rssi() > lbt_rssi) {
-						continue;
-					}
-					
 					// start transmitting the packet
 					radio_transmit(len + sizeof(trailer), pbuf, 10000 );
 					
