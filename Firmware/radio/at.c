@@ -204,6 +204,13 @@ at_timer(void)
 }
 #pragma restore
 
+void hashlittle2( 
+  const void *key,       /* the key to hash */
+  size_t      length,    /* length of the key */
+  uint32_t   *pc,        /* IN: primary initval, OUT: primary hash */
+  uint32_t   *pb);        /* IN: secondary initval, OUT: secondary hash */
+
+
 void
 at_command(void)
 {
@@ -329,6 +336,16 @@ at_i(void)
     return;
   case '5':
     print_ID_vals(' ', PARAM_MAX, param_name, param_get);
+    return;
+  case 'F':
+    // Verify checksum of app in flash
+    {
+#define FLASH_APP_BYTES (FLASH_INFO_PAGE-FLASH_APP_START)
+	    __at(FLASH_APP_START) uint8_t __code app[FLASH_APP_BYTES];
+	    uint32_t hash1,hash2;
+	    hashlittle2(app,FLASH_APP_BYTES,&hash1,&hash2);
+	    printf("HASH=%08x+%08x\n",hash1,hash2);
+    }
     return;
   default:
     at_error();
