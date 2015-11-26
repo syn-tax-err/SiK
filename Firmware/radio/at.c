@@ -51,9 +51,6 @@ __pdata uint8_t	at_cmd_len;
 bool		at_mode_active;	///< if true, incoming bytes are for AT command
 bool		at_cmd_ready;	///< if true, at_cmd / at_cmd_len contain valid data
 
-// test bits
-__pdata uint8_t		at_testmode;    ///< test modes enabled (AT_TEST_*)
-
 // command handlers
 static void	at_ok(void);
 static void	at_error(void);
@@ -61,7 +58,6 @@ static void	at_i(void);
 static void	at_s(void);
 static void	at_ampersand(void);
 static void	at_p(void);
-static void	at_plus(void);
 
 #pragma save
 #pragma nooverlay
@@ -232,9 +228,6 @@ at_command(void)
 			case '&':
 				at_ampersand();
 				break;
-			case '+':
-				at_plus();
-				break;
 			case 'I':
 				at_i();
 				break;
@@ -337,9 +330,6 @@ at_i(void)
   case '5':
     print_ID_vals(' ', PARAM_MAX, param_name, param_get);
     return;
-  case '7':
-    csma_show_rssi();
-    return;
   default:
     at_error();
     return;
@@ -412,18 +402,6 @@ at_ampersand(void)
 		at_error();
 		break;
 
-	case 'T':
-		// enable test modes
-		if (!strcmp(at_cmd + 4, "")) {
-			// disable all tests
-			at_testmode = 0;
-		} else if (!strcmp(at_cmd + 4, "=RSSI")) {
-			// display RSSI stats
-			at_testmode ^= AT_TEST_RSSI;
-		} else {
-			at_error();
-		}
-		break;
 #ifdef INCLUDE_AES
   case 'E':
     switch (at_cmd[4]) {
@@ -507,86 +485,4 @@ at_p (void)
 #else
 	at_error();
 #endif
-}
-
-static void
-at_plus(void)
-{
-  __pdata uint8_t		creg;
-  
-  // get the register number first
-  idx = 4;
-  at_parse_number();
-  creg = at_num;
-  
-  switch (at_cmd[3])
-  {
-#if defined BOARD_rfd900a || defined BOARD_rfd900p
-  case 'P': // AT+P=x set power level pwm to x immediately
-    if (at_cmd[4] != '=')
-    {
-      break;
-    }
-    idx = 5;
-    at_parse_number();
-    PCA0CPH0 = at_num & 0xFF;
-    radio_set_diversity(DIVERSITY_DISABLED);
-    at_ok();
-    return;
-  case 'C': // AT+Cx=y write calibration value
-    switch (at_cmd[idx])
-    {
-    case '?':
-      at_num = calibration_get(creg);
-      printf("%lu\n",at_num);
-      return;
-    case '=':
-      idx++;
-      at_parse_number();
-      if (calibration_set(creg, at_num&0xFF))
-      {
-        at_ok();
-      } else {
-        at_error();
-      }
-      return;
-    }
-    break;
-  case 'F': // AT+Fx? get calibration value
-    switch (at_cmd[idx])
-    {
-    case '?':
-      at_num = calibration_force_get(creg);
-      printf("%lu\n",at_num);
-      return;
-    }
-    break;
-  case 'L': // AT+L lock bootloader area if all calibrations written
-    if (calibration_lock())
-    {
-      at_ok();
-    } else {
-      at_error();
-    }
-    return;
-#endif //BOARD_rfd900a / BOARD_rfd900p
-#ifdef RFD900_DIVERSITY
-  case 'A':
-    if (at_cmd[4] != '=')
-    {
-      break;
-    }
-    idx = 5;
-    at_parse_number();
-    if (at_num == 1) {
-      radio_set_diversity(DIVERSITY_ANT1);
-    }
-    else {
-      radio_set_diversity(DIVERSITY_ANT2);
-    }
-    at_ok();
-    return;
-#endif // RFD900_DIVERSITY
-  }
-  at_error();
 }

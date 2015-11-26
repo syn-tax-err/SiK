@@ -134,47 +134,6 @@ __pdata struct tdm_trailer trailer;
 static bool send_at_command;
 static __pdata char remote_at_cmd[AT_CMD_MAXLEN + 1];
 
-/// display RSSI output
-///
-void
-csma_show_rssi(void)
-{
-	printf("L/R RSSI: %u/%u  L/R noise: %u/%u pkts: %u,%u ",
-	       (unsigned)statistics.average_rssi,
-	       (unsigned)remote_statistics.average_rssi,
-	       (unsigned)statistics.average_noise,
-	       (unsigned)remote_statistics.average_noise,
-	       (unsigned)statistics.receive_count,
-	       (unsigned)statistics.receive_count_statspkt);
-	printf(" txe=%u,%u,%u rxe=%u stx=%u srx=%u ecc=%u/%u temp=%d dco=%u ",
-	       (unsigned)errors.tx_errors_fifo,
-	       (unsigned)errors.tx_errors_short,
-	       (unsigned)errors.tx_errors_timeout,
-	       (unsigned)errors.rx_errors,
-	       (unsigned)errors.serial_tx_overflow,
-	       (unsigned)errors.serial_rx_overflow,
-	       (unsigned)errors.corrected_errors,
-	       (unsigned)errors.corrected_packets,
-	       (int)radio_temperature(),
-	       (unsigned)duty_cycle_offset);
-	printf(" bang=%d, tx_buffered_data=%d, tx buffer bytes=%d\n",
-	       last_was_bang,tx_buffered_data,
-	       serial_read_available());
-	statistics.receive_count = 0;
-	statistics.receive_count_statspkt = 0;
-}
-
-/// display test output
-///
-static void
-display_test_output(void)
-{
-	if (test_display & AT_TEST_RSSI) {
-		csma_show_rssi();
-	}
-}
-
-
 /// estimate the flight time for a packet given the payload size
 ///
 /// @param packet_len		payload length in bytes
@@ -252,7 +211,6 @@ link_update(void)
 		memset(&remote_statistics, 0, sizeof(remote_statistics));
 	}
 
-	test_display = at_testmode;
 	send_statistics = 1;
 
 	temperature_count++;
@@ -332,12 +290,6 @@ csma_serial_loop(void)
 
 		// give the AT command processor a chance to handle a command
 		at_command();
-
-		// display test data if needed
-		if (test_display) {
-			display_test_output();
-			test_display = 0;
-		}
 
 		// set right receive channel
 		// PGS: Always the only channel we have for CSMA
