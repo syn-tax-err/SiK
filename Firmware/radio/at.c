@@ -341,10 +341,20 @@ at_i(void)
     // Verify checksum of app in flash
     {
 #define FLASH_APP_BYTES (FLASH_INFO_PAGE-FLASH_APP_START)
+	    uint32_t hash1=1,hash2=2;
+	    uint8_t hibit;
+	    uint16_t i;
 	    __at(FLASH_APP_START) uint8_t __code app[FLASH_APP_BYTES];
-	    uint32_t hash1,hash2;
-	    hashlittle2(app,FLASH_APP_BYTES,&hash1,&hash2);
-	    printf("HASH=%08x+%08x\n",hash1,hash2);
+	    for(i=0;i<FLASH_APP_BYTES;i++) {
+		    hibit=hash1>>31;
+		    hash1 = hash1 << 1;
+		    hash1 = hash1 ^ hibit;
+		    hash1 = hash1 ^ app[i];
+		    
+		    hash2 = hash2 + app[i];
+	    }       		
+	    // hashlittle2(app,FLASH_APP_BYTES,&hash1,&hash2);
+	    printf("HASH=%x+%x\n",hash1,hash2);
     }
     return;
   default:
