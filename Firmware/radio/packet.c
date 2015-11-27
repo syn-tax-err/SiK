@@ -76,7 +76,7 @@ bool using_mavlink_10;
 
 // return the next packet to be sent
 uint8_t
-packet_get_next(register uint8_t max_xmit, __xdata uint8_t * buf)
+packet_get_next(register uint8_t max_xmit, __xdata uint8_t *buf)
 {
 	register uint16_t slen;
 
@@ -180,7 +180,7 @@ packet_set_serial_speed(uint16_t speed)
 
 // inject a packet to send when possible
 void 
-packet_inject(__xdata uint8_t * buf, __pdata uint8_t len)
+packet_inject(__xdata uint8_t *buf, __pdata uint8_t len)
 {
 	if (len > sizeof(last_sent)) {
 		len = sizeof(last_sent);

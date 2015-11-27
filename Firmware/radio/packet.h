@@ -45,11 +45,6 @@ extern bool packet_is_resend(void);
 /// @return			true is injected
 extern bool packet_is_injected(void);
 
-/// determine if a received packet is a duplicate
-///
-/// @return			true if this is a duplicate
-extern bool packet_is_duplicate(uint8_t len, __xdata uint8_t *buf, bool is_resend);
-
 /// force the last packet to be re-sent. Used when packet transmit has
 /// failed
 extern void packet_force_resend(void);

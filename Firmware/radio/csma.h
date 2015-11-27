@@ -50,9 +50,6 @@ extern void csma_report_timing(void);
 /// dispatch a remote AT command
 extern void csma_remote_at(void);
 
-/// show RSSI information
-extern void csma_show_rssi(void);
-
 /// the long term duty cycle we are aiming for
 extern __pdata uint8_t duty_cycle;
 

@@ -68,26 +68,6 @@ extern bool	serial_write(register uint8_t c);
 ///
 extern void	serial_write_buf(__xdata uint8_t * buf, __pdata uint8_t count);
 
-#ifdef INCLUDE_AES
-extern void serial_decrypt_buf(__xdata uint8_t * buf, __pdata uint8_t count);
-
-/// Encryption ring buffer checks. Is it getting too full?
-//
-extern bool encrypt_buffer_getting_full();
-
-/// Encryption ring buffer checks. Is it getting empty now?
-//
-extern bool encrypt_buffer_getting_empty();
-
-/// Get space left in encrypt buffer
-//
-extern uint16_t encrypt_buffer_write_space();
-#endif // INCLUDE_AES
-
-/// Decrypt any packets in the buffer and push to the serial layer
-///
-extern bool decryptPackets(void);
-
 /// Check for space in the write FIFO
 ///
 /// @return			The number of bytes that can be written.
@@ -106,8 +86,7 @@ extern uint8_t	serial_read_space(void);
 ///
 /// @return			The number of bytes of free space in the rx buffer
 ///
-uint16_t
-serial_read_space_bytes(void);
+extern uint16_t serial_read_space_bytes(void);
 
 
 /// Read a byte from the serial port.
