@@ -48,3 +48,5 @@
 extern void	flash_erase_scratch(void);
 extern uint8_t	flash_read_scratch(__pdata uint16_t address);
 extern void	flash_write_scratch(__pdata uint16_t address, __pdata uint8_t c);
+extern void flash_calculate_hash(void);
+extern uint32_t hash1,hash2;

@@ -143,22 +143,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				}
 			} else if ((c=='F') && last_was_bang ) {
 				last_was_bang=0;
-				{
-#define FLASH_APP_BYTES (FLASH_INFO_PAGE-FLASH_APP_START)
-					uint32_t hash1=1,hash2=2;
-					uint8_t hibit;
-					uint16_t i;
-					__at(FLASH_APP_START) uint8_t __code app[FLASH_APP_BYTES];
-					for(i=0;i<FLASH_APP_BYTES;i++) {
-						hibit=hash1>>31;
-						hash1 = hash1 << 1;
-						hash1 = hash1 ^ hibit;
-						hash1 = hash1 ^ app[i];
-						
-						hash2 = hash2 + app[i];
-					}       		
-					printf("HASH=%x+%x\n",hash1,hash2);
-				}
+				printf("HASH=%u:%u:%lx+%lx\n",BOARD_ID,g_board_frequency,hash1,hash2);
 			} else if ((c=='H') && last_was_bang ) {
 				last_was_bang=0;
 				param_set(PARAM_TXPOWER,25);

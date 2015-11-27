@@ -112,3 +112,24 @@ __critical {
 #endif // CPU_SI1030
 	PSCTL = FLASH_DISABLE;
 }
+
+uint32_t hash1=1,hash2=2;
+					
+void
+flash_calculate_hash(void)
+{
+#define FLASH_APP_BYTES (FLASH_INFO_PAGE-FLASH_APP_START)
+	__at(FLASH_APP_START) uint8_t __code app[FLASH_APP_BYTES];
+	uint8_t hibit;
+	uint16_t i;
+	hash1=1; hash2=2;
+	for(i=0;i<FLASH_APP_BYTES;i++) {
+		hibit=hash1>>31;
+		hash1 = hash1 << 1;
+		hash1 = hash1 ^ hibit;
+		hash1 = hash1 ^ app[i];
+		
+		hash2 = hash2 + app[i];
+	}       		
+	return;
+}

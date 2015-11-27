@@ -34,6 +34,7 @@
 
 #include "radio.h"
 #include "csma.h"
+#include "flash.h"
 #include "flash_layout.h"
 #include "at.h"
 #include "board.h"
@@ -338,24 +339,8 @@ at_i(void)
     print_ID_vals(' ', PARAM_MAX, param_name, param_get);
     return;
   case 'F':
-    // Verify checksum of app in flash
-    {
-#define FLASH_APP_BYTES (FLASH_INFO_PAGE-FLASH_APP_START)
-	    uint32_t hash1=1,hash2=2;
-	    uint8_t hibit;
-	    uint16_t i;
-	    __at(FLASH_APP_START) uint8_t __code app[FLASH_APP_BYTES];
-	    for(i=0;i<FLASH_APP_BYTES;i++) {
-		    hibit=hash1>>31;
-		    hash1 = hash1 << 1;
-		    hash1 = hash1 ^ hibit;
-		    hash1 = hash1 ^ app[i];
-		    
-		    hash2 = hash2 + app[i];
-	    }       		
-	    // hashlittle2(app,FLASH_APP_BYTES,&hash1,&hash2);
-	    printf("HASH=%x+%x\n",hash1,hash2);
-    }
+    // Display checksum of app in flash
+    printf("HASH=%u:%u:%lx+%lx\n",BOARD_ID,g_board_frequency,hash1,hash2);
     return;
   default:
     at_error();

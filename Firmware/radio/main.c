@@ -129,6 +129,10 @@ main(void)
 #if PIN_MAX > 0
 	pins_user_init();
 #endif
+
+	// Calculate hashes of flash memory now, so that we can respond quickly later
+	// when requested.
+	flash_calculate_hash();
 	
 	csma_serial_loop();
 }
