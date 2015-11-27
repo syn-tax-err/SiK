@@ -143,7 +143,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				}
 			} else if ((c=='F') && last_was_bang ) {
 				last_was_bang=0;
-				printf("HASH=%u:%u:%lx+%lx\n",BOARD_ID,g_board_frequency,hash1,hash2);
+				printf("HASH=%x:%x:%lx+%lx\n",BOARD_ID,g_board_frequency,hash1,hash2);
 			} else if ((c=='H') && last_was_bang ) {
 				last_was_bang=0;
 				param_set(PARAM_TXPOWER,25);
