@@ -58,11 +58,11 @@ on 1 byte), but shoehorning those bytes into integers efficiently is messy.
 -------------------------------------------------------------------------------
 mix -- mix 3 32-bit values reversibly.
 
-This is reversible, so any information in (a,b,c) before mix() is
-still in (a,b,c) after mix().
+This is reversible, so any information in (a,b,c) before mix is
+still in (a,b,c) after mix.
 
-If four pairs of (a,b,c) inputs are run through mix(), or through
-mix() in reverse, there are at least 32 bits of the output that
+If four pairs of (a,b,c) inputs are run through mix, or through
+mix in reverse, there are at least 32 bits of the output that
 are sometimes the same for one pair and different for another pair.
 This was tested for:
 * pairs that differed by one bit, by two bits, in any combination
