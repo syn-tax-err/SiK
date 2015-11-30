@@ -340,10 +340,7 @@ at_i(void)
     return;
   case 'F':
     // Display checksum of app in flash (and enough info to replicate it)
-    printf("HASH=%x:%x:%x:%x:%lx+%lx\n",
-	   BOARD_ID,g_board_frequency,
-	   FLASH_APP_START,FLASH_INFO_PAGE,
-	   hash1,hash2);
+    flash_report_summary();
     return;
   default:
     at_error();

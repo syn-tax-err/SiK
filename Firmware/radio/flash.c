@@ -114,22 +114,41 @@ __critical {
 }
 
 uint32_t hash1=1,hash2=2;
-					
+uint16_t checksums[64];
+
 void
 flash_calculate_hash(void)
 {
 #define FLASH_APP_BYTES (FLASH_INFO_PAGE-FLASH_APP_START)
-	__at(FLASH_APP_START) uint8_t __code app[FLASH_APP_BYTES];
+	__at(0) uint8_t __code app[0x10000];
 	uint8_t hibit;
 	uint16_t i;
+	uint8_t	j;
 	hash1=1; hash2=2;
-	for(i=0;i<FLASH_APP_BYTES;i++) {
+	for(i=FLASH_APP_START;i<FLASH_INFO_PAGE;i++) {
 		hibit=hash1>>31;
 		hash1 = hash1 << 1;
 		hash1 = hash1 ^ hibit;
 		hash1 = hash1 ^ app[i];
 		
 		hash2 = hash2 + app[i];
-	}       		
+	}
+	for(j=0;j<64;j++) {
+		checksums[j]=0;
+		for(i=0;i<0x400;i++) checksums[j] += app[(j<<10)+i];
+	}
 	return;
+}
+
+void
+flash_report_summary(void)
+{
+	uint8_t i;
+	
+	printf("HASH=%x:%x:%x:%x:%lx",
+	       BOARD_ID,g_board_frequency,
+	       FLASH_APP_START,FLASH_INFO_PAGE,
+	       hash1);
+	for(i=0;i<64;i++) printf(",%x",checksums[i]);
+	printf("\n");
 }
