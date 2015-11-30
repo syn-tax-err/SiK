@@ -339,8 +339,11 @@ at_i(void)
     print_ID_vals(' ', PARAM_MAX, param_name, param_get);
     return;
   case 'F':
-    // Display checksum of app in flash
-    printf("HASH=%x:%x:%lx+%lx\n",BOARD_ID,g_board_frequency,hash1,hash2);
+    // Display checksum of app in flash (and enough info to replicate it)
+    printf("HASH=%x:%x:%x:%x:%lx+%lx\n",
+	   BOARD_ID,g_board_frequency,
+	   FLASH_APP_START,FLASH_INFO_PAGE,
+	   hash1,hash2);
     return;
   default:
     at_error();
