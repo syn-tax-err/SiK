@@ -114,7 +114,11 @@ __critical {
 }
 
 uint32_t hash1=1,hash2=2;
-uint16_t checksums[64];
+uint16_t checksums[64]={64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+			80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,
+			64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+			80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95
+};
 
 void
 flash_calculate_hash(void)
@@ -123,19 +127,24 @@ flash_calculate_hash(void)
 	__at(0) uint8_t __code app[0x10000];
 	uint8_t hibit;
 	uint16_t i;
-	uint8_t	j;
+	uint8_t	j,b;
 	hash1=1; hash2=2;
+	j=(FLASH_APP_START/1024)-1;
 	for(i=FLASH_APP_START;i<FLASH_INFO_PAGE;i++) {
+		b = app[i];
 		hibit=hash1>>31;
 		hash1 = hash1 << 1;
 		hash1 = hash1 ^ hibit;
-		hash1 = hash1 ^ app[i];
+		hash1 = hash1 ^ b;
 		
-		hash2 = hash2 + app[i];
-	}
-	for(j=0;j<64;j++) {
-		checksums[j]=0;
-		for(i=0;i<0x400;i++) checksums[j] += app[(j<<10)+i];
+		hash2 = hash2 + b;
+
+		if((i&0x3ff)==0x0) {
+			j++; if ((j<64)) checksums[j]=b;
+			checksums[0]++;
+		} else {
+			if ((j<64)) checksums[j] += b;
+		}
 	}
 	return;
 }
@@ -143,12 +152,12 @@ flash_calculate_hash(void)
 void
 flash_report_summary(void)
 {
-	uint8_t i;
+		uint8_t i;
 	
 	printf("HASH=%x:%x:%x:%x:%lx",
 	       BOARD_ID,g_board_frequency,
 	       FLASH_APP_START,FLASH_INFO_PAGE,
 	       hash1);
-	for(i=0;i<64;i++) printf(",%x",checksums[i]);
+		for(i=0;i<64;i++) printf(",%x",checksums[i]);
 	printf("\n");
 }
