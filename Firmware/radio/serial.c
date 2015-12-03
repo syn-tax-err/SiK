@@ -141,6 +141,27 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				} else {
 					last_was_bang=1;
 				}
+			} else if ((c=='C') && last_was_bang ) {
+				// clear TX buffer
+				last_was_bang=0;
+				while (BUF_NOT_EMPTY(rx)) {
+					BUF_REMOVE(rx,c);
+				}
+			} else if ((c>='a') &&(c<='z') && last_was_bang ) {
+				// Actions for the 6 GPIOs
+				// (note that reading the ADC values is handled
+				//  elsewhere).
+				// a-f : set output
+				// g-l : set input
+				// m-r : set output value = 0
+				// s-x : set output value = 1
+				// y-z : reserved
+#if PIN_MAX > 0
+				if (c<'g') pins_user_set_io(c-'a', PIN_OUTPUT);
+				else if (c<'m') pins_user_set_io(c-'g',PIN_INPUT);
+				else if (c<'s') pins_user_set_value(c-'m',0);
+				else if (c<'y') pins_user_set_value(c-'s',1);
+#endif				
 			} else if ((c=='F') && last_was_bang ) {
 				last_was_bang=0;
 				flash_report_summary();
@@ -150,13 +171,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if ((c=='L') && last_was_bang ) {
 				last_was_bang=0;
 				param_set(PARAM_TXPOWER,1);
-			} else if ((c=='0') && last_was_bang ) {
-				// clear TX buffer
-				last_was_bang=0;
-				while (BUF_NOT_EMPTY(rx)) {
-					BUF_REMOVE(rx,c);
-				}
-			} else if ((c=='v') && last_was_bang ) {
+			} else if ((c=='V') && last_was_bang ) {
 				// Provide version info, to allow quick detection of CSMA
 				// firmware
 				putchar('1');
@@ -169,7 +184,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					if (errors.serial_rx_overflow != 0xFFFF) {
 						errors.serial_rx_overflow++;
 					}
-				}				
+				}
 			} else if (last_was_bang) {
 				// Unknown ! command
 				last_was_bang=0;
