@@ -156,6 +156,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				// m-r : set output value = 0
 				// s-x : set output value = 1
 				// y-z : reserved
+				last_was_bang=0;
 #if PIN_MAX > 0
 				if (c<'g') pins_user_set_io(c-'a', PIN_OUTPUT);
 				else if (c<'m') pins_user_set_io(c-'g',PIN_INPUT);
