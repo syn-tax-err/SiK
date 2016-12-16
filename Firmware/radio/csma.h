@@ -27,7 +27,7 @@
 //
 
 ///
-/// @file	tdm.h
+/// @file	csma.h
 ///
 /// Interface to the time division multiplexing code
 ///
