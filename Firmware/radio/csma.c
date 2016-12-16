@@ -406,6 +406,12 @@ csma_serial_loop(void)
 #endif
 				}
 				putchar(0xdd);
+				// XXX - We need to check GPIOs for regulatory domain selection
+				// Indicate board frequency
+				putchar(g_board_frequency);
+				// CR LF for convenience
+				putchar(0x0d);
+				putchar(0x0a);
 			}
 		}
 
