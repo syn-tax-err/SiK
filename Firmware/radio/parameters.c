@@ -67,6 +67,7 @@ __code const struct parameter_info {
 	{"LBT_RSSI",        80},
 	{"MANCHESTER",      0},
 	{"RTSCTS",          0},
+	{"I2CDELAY",    50000}
 };
 
 /// In-RAM parameter store.
