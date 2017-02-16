@@ -162,14 +162,16 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if ((c=='E') && last_was_bang ) {
 				// Dump EEPROM contents
 				{
-					unsigned short address;
+					static __xdata unsigned short address;
 					unsigned char byte;
-					for(address=0;address<0x800;address++)
+					unsigned char count;
+					if (!(address&0xf)) printfl("\r\n%x : ",address);
+					for(count=0;count<16;count++)
 						{
-							if (!(address&0xf)) printfl("\r\n%x : ",address);
 							byte=0x00;
 							eeprom_read_byte(address,&byte);
 							printfl(" %x",byte);
+							address++;
 						}
 					printfl("\r\n");
 					last_was_bang=0;
