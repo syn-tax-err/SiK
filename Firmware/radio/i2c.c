@@ -5,6 +5,8 @@
 #include "crc.h"
 #include "pins_user.h"
 
+__xdata unsigned short i2c_delay_counter=50000;
+
 #if PIN_MAX>0
 
 void i2c_delay(void)
@@ -12,7 +14,7 @@ void i2c_delay(void)
   // 10 microsecond delay
 
   // Will this be enough?
-  for(unsigned char i=0;i<255;i++) continue;
+  for(unsigned short i=0;i<i2c_delay_counter;i++) continue;
 }
 
 void i2c_clock_high(void)

@@ -5,3 +5,4 @@ unsigned char i2c_tx(unsigned char d);
 char eeprom_write_byte(unsigned short address, unsigned char value);
 char eeprom_read_byte(unsigned short address, char *byte);
 
+extern __xdata unsigned short i2c_delay_counter;

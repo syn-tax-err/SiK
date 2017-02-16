@@ -42,6 +42,7 @@
 #include "radio.h"
 #include "csma.h"
 #include "crc.h"
+#include "i2c.h"
 #include <flash_layout.h>
 
 #ifdef INCLUDE_AES
@@ -194,6 +195,9 @@ param_set(__data enum ParamID param, __pdata param_t value)
 		value = feature_rtscts?1:0;
 		break;
 
+	case PARAM_I2CDELAY:
+		i2c_delay_counter = value;
+		
 	default:
 		break;
 	}

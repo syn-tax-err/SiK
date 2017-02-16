@@ -58,6 +58,7 @@ enum ParamID {
 	PARAM_LBT_RSSI,			// listen before talk threshold
 	PARAM_MANCHESTER,		// enable manchester encoding
 	PARAM_RTSCTS,			// enable hardware flow control
+	PARAM_I2CDELAY,                 // delay counter for I2C EEPROM communications
 	PARAM_MAX				// must be last
 };
 
