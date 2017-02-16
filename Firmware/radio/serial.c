@@ -47,13 +47,8 @@
 // 8 TDM time slots
 //
 
-#ifdef CPU_SI1030
-#define RX_BUFF_MAX 1024 //2048
-#define TX_BUFF_MAX 1024
-#else
-#define RX_BUFF_MAX 1850
-#define TX_BUFF_MAX 645
-#endif // CPU_SI1030
+#define RX_BUFF_MAX 512
+#define TX_BUFF_MAX 512
 
 __xdata uint8_t rx_buf[RX_BUFF_MAX] = {0};
 __xdata uint8_t tx_buf[TX_BUFF_MAX] = {0};
