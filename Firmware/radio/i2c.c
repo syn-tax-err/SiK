@@ -19,24 +19,26 @@ void i2c_delay(void)
 
 void i2c_clock_high(void)
 {
-  pins_user_set_io(3,false);
+  pins_user_set_io(3,PIN_INPUT);
+  pins_user_set_value(3,1);
 }
 
 void i2c_clock_low(void)
 {
-  pins_user_set_io(3,true);
-  pins_user_set_value(3,false);
+  pins_user_set_io(3,PIN_OUTPUT);
+  pins_user_set_value(3,0);
 }
 
 void i2c_data_high(void)
 {
-  pins_user_set_io(4,false);
+  pins_user_set_io(4,PIN_INPUT);
+  pins_user_set_value(4,1);
 }
 
 void i2c_data_low(void)
 {
-  pins_user_set_io(4,true);
-  pins_user_set_value(4,false);
+  pins_user_set_io(4,PIN_OUTPUT);
+  pins_user_set_value(4,0);
 }
 
 unsigned char i2c_clock_value(void)
