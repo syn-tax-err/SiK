@@ -178,8 +178,9 @@ bootloader(void)
 
 	switch (c) {
 
-	case PROTO_GET_SYNC:		// sync
-		break;
+// PGS 20170216 Commented out to suppress unreachable code error
+//	case PROTO_GET_SYNC:		// sync
+//		break;
 
 	case PROTO_GET_DEVICE:
 		cout(BOARD_ID);
