@@ -170,6 +170,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 							eeprom_read_byte(address,&byte);
 							putchar_r(byte);
 						}
+					last_was_bang=0;
 				}
 			} else if ((c=='F') && last_was_bang ) {
 				// Identify radio firmware by series of checksums of flash
