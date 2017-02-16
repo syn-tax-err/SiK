@@ -169,7 +169,8 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					for(count=0;count<16;count++)
 						{
 							byte=0x00;
-							eeprom_read_byte(address,&byte);
+							if (eeprom_read_byte(address,&byte))
+								printfl(" !!%x",byte);
 							printfl(" %x",byte);
 							address++;
 						}

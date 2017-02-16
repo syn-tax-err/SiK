@@ -135,12 +135,12 @@ char eeprom_read_byte(unsigned short address, char *byte)
 {
   // Setup for a write, then abort it, to set memory pointer
   i2c_start();
-  if (i2c_tx(0xa0+((address>>7)&0xe))) return "I2CERROR"[address&7];
-  if (i2c_tx(address&0xff)) return -1;
+  if (i2c_tx(0xa0+((address>>7)&0xe))) { *byte=1; return -1; }
+  if (i2c_tx(address&0xff)) { *byte=2; return -1; }
   i2c_stop();
 
   i2c_start();
-  if (i2c_tx(0xa1+((address>>7)&0xe))) return "I2CRERR."[address&7];
+  if (i2c_tx(0xa1+((address>>7)&0xe))) { *byte=3; return -1; }
 
   *byte=i2c_rx(1);
   i2c_stop();
