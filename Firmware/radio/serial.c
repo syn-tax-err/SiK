@@ -166,10 +166,10 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					unsigned char byte;
 					for(address=0;address<0x800;address++)
 						{
-							if (!(address&0xf)) printfl("\r\n%04x : ",address);
+							if (!(address&0xf)) printfl("\r\n%x : ",address);
 							byte=0x00;
 							eeprom_read_byte(address,&byte);
-							printfl(" %02x",byte);
+							printfl(" %x",byte);
 						}
 					printfl("\r\n");
 					last_was_bang=0;
