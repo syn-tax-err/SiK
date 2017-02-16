@@ -143,4 +143,16 @@ char eeprom_read_byte(unsigned short address, char *byte)
 
 #else
 // No GPIOs, so ignore
+char eeprom_write_byte(unsigned short address, unsigned char value)
+{
+  address=value;  // suppress compiler warnings
+  return -1;
+}
+
+char eeprom_read_byte(unsigned short address, char *byte)
+{  
+  *byte="NOEPROM."[address&7];
+  return 0;
+}
+
 #endif
