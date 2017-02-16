@@ -244,7 +244,7 @@ handle_at_command(__pdata uint8_t len)
 		// assume its an AT command reply
 		register uint8_t i;
 		for (i=0; i<len; i++) {
-			putchar(pbuf[i]);
+			putchar_r(pbuf[i]);
 		}
 		return;
 	}
@@ -396,22 +396,22 @@ csma_serial_loop(void)
 			if (!at_mode_active) {
 				uint8_t i;
 				// Also report on the status of the GPIOs
-				putchar(0xce);
-				putchar(0xec);				
+				putchar_r(0xce);
+				putchar_r(0xec);				
 				for(i=0;i<6;i++) {
 #if PIN_MAX > 0
-					putchar(pins_user_get_adc(i));
+					putchar_r(pins_user_get_adc(i));
 #else
-					putchar(0xbd);
+					putchar_r(0xbd);
 #endif
 				}
-				putchar(0xdd);
+				putchar_r(0xdd);
 				// XXX - We need to check GPIOs for regulatory domain selection
 				// Indicate board frequency
-				putchar(g_board_frequency);
+				putchar_r(g_board_frequency);
 				// CR LF for convenience
-				putchar(0x0d);
-				putchar(0x0a);
+				putchar_r(0x0d);
+				putchar_r(0x0a);
 			}
 		}
 

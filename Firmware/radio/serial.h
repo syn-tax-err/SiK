@@ -139,4 +139,7 @@ extern uint16_t	serial_read_available(void);
 ///
 extern void serial_check_rts(void);
 
+void putchar_r(char c) __reentrant;
+void puts_r(char *s);
+
 #endif // _SERIAL_H_

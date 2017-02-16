@@ -65,7 +65,7 @@ static void
 output_char(register char c)
 {
 	if (!capture) {
-		putchar(c);
+		putchar_r(c);
 		return;
 	}
 	if (captured_size < capture_buffer_size) {

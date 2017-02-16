@@ -184,7 +184,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if ((c=='V') && last_was_bang ) {
 				// Provide version info, to allow quick detection of CSMA
 				// firmware
-				putchar('1');
+				putchar_r('1');
 			} else if ((c=='.') && last_was_bang ) {
 				last_was_bang=0;
 				// Insert escaped ! into serial RX buffer
@@ -198,7 +198,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if (last_was_bang) {
 				// Unknown ! command
 				last_was_bang=0;
-				putchar('E');
+				putchar_r('E');
 			} else {
 				// Character to put in TX buffer
 				if (BUF_NOT_FULL(rx)) {
@@ -531,11 +531,17 @@ serial_read_space_bytes(void)
 
 
 void
-putchar(char c) __reentrant
+putchar_r(char c) __reentrant
 {
 	if (c == '\n')
 		_serial_write('\r');
 	_serial_write(c);
+}
+
+void puts_r(char *s)
+{
+	while(s++) putchar_r(*s);
+	putchar_r('\n');
 }
 
 

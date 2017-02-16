@@ -142,10 +142,10 @@ panic(char *fmt, ...)
 {
 	va_list ap;
 
-	puts("\n**PANIC**");
+	puts_r("\n**PANIC**");
 	va_start(ap, fmt);
 	vprintf(fmt, ap);
-	puts("");
+	puts_r("");
 
 	EA = 1;
 	ES0 = 1;

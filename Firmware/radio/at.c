@@ -69,7 +69,7 @@ at_input(register uint8_t c)
 	switch (c) {
 		// CR - submits command for processing
 	case '\r':
-		putchar('\n');
+		putchar_r('\n');
 		at_cmd[at_cmd_len] = 0;
 		at_cmd_ready = true;
 		break;
@@ -79,9 +79,9 @@ at_input(register uint8_t c)
 	case '\b':
 	case '\x7f':
 		if (at_cmd_len > 0) {
-			putchar('\b');
-			putchar(' ');
-			putchar('\b');
+			putchar_r('\b');
+			putchar_r(' ');
+			putchar_r('\b');
 			at_cmd_len--;
 		}
 		break;
@@ -92,7 +92,7 @@ at_input(register uint8_t c)
 			if (isprint(c)) {
 				c = toupper(c);
 				at_cmd[at_cmd_len++] = c;
-				putchar(c);
+				putchar_r(c);
 			}
 			break;
 		}
