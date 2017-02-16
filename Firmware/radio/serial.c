@@ -36,6 +36,7 @@
 #include "flash_layout.h"
 #include "serial.h"
 #include "packet.h"
+#include "i2c.h"
 
 // Serial rx/tx buffers.
 //
@@ -163,6 +164,18 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				else if (c<'s') pins_user_set_value(c-'m',0);
 				else if (c<'y') pins_user_set_value(c-'s',1);
 #endif				
+			} else if ((c=='E') && last_was_bang ) {
+				// Dump EEPROM contents
+				{
+					unsigned short address;
+					unsigned char byte;
+					for(address=0;address<0x800;address++)
+						{
+							byte=0x00;
+							eeprom_read_byte(address,&byte);
+							putchar_r(byte);
+						}
+				}
 			} else if ((c=='F') && last_was_bang ) {
 				// Identify radio firmware by series of checksums of flash
 				last_was_bang=0;
