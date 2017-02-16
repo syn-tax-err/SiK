@@ -60,8 +60,8 @@ unsigned char i2c_data_value(void)
 
 void i2c_stop(void)
 {
-    i2c_clock_high();
-  i2c_data_high();
+  i2c_clock_high(); i2c_delay();
+  i2c_data_high();  i2c_delay();
 
 }
 
@@ -69,8 +69,8 @@ void i2c_start(void)
 {
   i2c_stop();
   
-  i2c_data_low();
-  i2c_clock_low();
+  i2c_data_low();  i2c_delay();
+  i2c_clock_low(); i2c_delay();
 }
 
 unsigned char i2c_rx(char ack)
