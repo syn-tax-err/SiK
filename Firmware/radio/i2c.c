@@ -69,6 +69,7 @@ unsigned char i2c_rx(char ack)
 {
   char x=0;
   char d=0;
+  char timeout=255;
 
   i2c_data_high();
   i2c_delay();
@@ -80,7 +81,10 @@ unsigned char i2c_rx(char ack)
     i2c_delay();
 
     // Wait for any clock stretching
-    while (i2c_clock_value()) i2c_delay();
+    while (i2c_clock_value()) {
+      timeout--; if (!timeout) return 0x54;
+      i2c_delay();
+    }
 
     if (i2c_data_value()) d|=1;
 
@@ -122,7 +126,7 @@ char eeprom_write_byte(unsigned short address, unsigned char value)
   i2c_start();
   if (i2c_tx(0xa0+((address>>7)&0xe))) return -1;
   if (i2c_tx(address&0xff)) return -1;
-  while (i2c_tx(value)) i2c_delay();
+  if (i2c_tx(value)) return -1;
   i2c_stop();
   return 0;
 }
