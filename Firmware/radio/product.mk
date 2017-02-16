@@ -29,7 +29,7 @@
 
 # Use major version nummbers 101 and up for CSMA firmware.
 VERSION_MAJOR	 =	101
-VERSION_MINOR	 =	17
+VERSION_MINOR	 =	18
 
 PRODUCT		 =	radio~$(BOARD)
 PRODUCT_DIR	:=	$(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))

@@ -321,6 +321,7 @@ at_i(void)
   switch (at_cmd[3]) {
   case '\0':
   case '0':
+    // XXX - Fix to show frequency of board
     printf("%s\n", g_banner_string);
     return;
   case '1':

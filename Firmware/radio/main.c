@@ -293,6 +293,9 @@ radio_init(void)
 		break;
 	case FREQ_868:
 		freq = 869000000UL;
+		if (param_get(PARAM_FREQ)>898000)
+		    // If we are using the 900 MHz default frequency, set it to the 868 band
+                    param_set(PARAM_FREQ,868000);
 		txpower = 10;
 		break;
 	case FREQ_915:
