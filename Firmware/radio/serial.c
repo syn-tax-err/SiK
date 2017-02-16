@@ -158,6 +158,8 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				else if (c<'m') pins_user_set_io(c-'g',PIN_INPUT);
 				else if (c<'s') pins_user_set_value(c-'m',0);
 				else if (c<'y') pins_user_set_value(c-'s',1);
+				else if (c=='y') i2c_data_low();
+				else if (c=='z') i2c_data_high();
 #endif				
 			} else if ((c=='E') && last_was_bang ) {
 				// Dump EEPROM contents
