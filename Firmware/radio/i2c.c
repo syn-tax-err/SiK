@@ -14,7 +14,10 @@ void i2c_delay(void)
   // 10 microsecond delay
 
   // Will this be enough?
-  for(unsigned short i=0;i<i2c_delay_counter;i++) continue;
+  for(unsigned short i=0;i!=i2c_delay_counter;i++)
+    for(unsigned byte j=0;j!=0xff;j++)
+      continue;
+    
 }
 
 void i2c_clock_high(void)
