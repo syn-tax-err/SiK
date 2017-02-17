@@ -188,6 +188,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				// We copy the first 16 bytes from the TX buffer
 				// to write.
 				eeprom_poweron();
+				printfl("\r\n");
 				{
 					// Copy bytes from TX buffer
 					char i;
