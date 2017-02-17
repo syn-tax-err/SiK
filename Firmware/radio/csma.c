@@ -396,8 +396,11 @@ csma_serial_loop(void)
 			if (!at_mode_active) {
 				uint8_t i;
 				// Also report on the status of the GPIOs
-				putchar_r(0xce);
-				putchar_r(0xec);				
+				// Wrap in UTF-8 2-byte codes for { and }
+				// for ease of human readability, while remaining
+				// unambigious for machine decoding
+				putchar_r(0xc1);
+				putchar_r(0xbb);				
 				for(i=0;i<6;i++) {
 #if PIN_MAX > 0
 					if(pins_user_get_io(i) == PIN_INPUT)
@@ -411,10 +414,13 @@ csma_serial_loop(void)
 					putchar_r(0xbd);
 #endif
 				}
-				putchar_r(0xdd);
+				putchar_r(0xc1);
+				putchar_r(0xbd);				
+
 				// XXX - We need to check GPIOs for regulatory domain selection
 				// Indicate board frequency
-				putchar_r(g_board_frequency);
+				putchar_r('0'+(g_board_frequency>>4));
+				putchar_r('0'+(g_board_frequency&0xf));
 				// CR LF for convenience
 				putchar_r(0x0d);
 				putchar_r(0x0a);
