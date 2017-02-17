@@ -180,21 +180,23 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				// Dump EEPROM contents
 				{
 					static __xdata unsigned short address;
-					unsigned char byte;
 					unsigned char count=0;
 					eeprom_poweron();
 					printfl("\r\n");
 					while(1)
 						{
-							if (!(address&0xf)) printfl("EPR:%x : ",address);
-							byte=0x00;
-							if (eeprom_read_byte(address,&byte))
-								printfl(" !!%x",byte);
-							else
-								printfl(" %x",byte);
-							address++;
+							char i;
+							printfl("EPR:%x : ",address);
+							i=eeprom_read_page(address);
+							if (i) printfl("READ ERROR #%d",i);
+							else {
+								for(i=0;i<16;i++)
+									printfl(" %x",eeprom_data[i]);
+							}
+							printfl("\r\n");
+							address+=16;
 							if (address>=0x800) address=0;
-							if (!(address&0xf)) printfl("\r\n");
+							
 							count++;
 							if (count==0x80) break;
 						}

@@ -6,6 +6,7 @@
 #include "pins_user.h"
 
 __xdata unsigned short i2c_delay_counter=1;
+__xdata unsigned char eeprom_data[16];
 
 #if PIN_MAX>0
 
@@ -179,6 +180,22 @@ char eeprom_read_byte(unsigned short address, char *byte)
   return 0;
 }
 
+char eeprom_read_page(unsigned short address)
+{
+  i2c_start();
+  if (i2c_tx(0xa0+((address>>7)&0xe))) { i2c_stop(); return -1; }
+  if (i2c_tx(address&0xff)) { i2c_stop(); return -1; }
+
+  i2c_start();
+  
+  if (i2c_tx(0xa1+((address>>7)&0xe))) { i2c_stop(); return -1; }
+
+  for(unsigned char i=0;i<16;i++) eeprom_data[i]=i2c_rx(1);
+  i2c_stop();
+  
+  return 0;
+}
+
 #else
 // No GPIOs, so ignore
 
@@ -201,7 +218,14 @@ char eeprom_write_byte(unsigned short address, unsigned char value)
 char eeprom_read_byte(unsigned short address, char *byte)
 {  
   *byte="NOEPROM."[address&7];
-  return 0;
+  return -1;
 }
+
+char eeprom_read_page(unsigned short address)
+{
+  address++; // suppress compiler warning
+  return -1;
+}
+
 
 #endif
