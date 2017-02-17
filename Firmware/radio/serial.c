@@ -110,6 +110,8 @@ void
 serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 {
 	register uint8_t	c;
+	static __xdata short eeprom_address;
+						
 
 	// check for received byte first
 	if (RI0) {
@@ -174,28 +176,54 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				  i2c_clock_high(); i2c_delay();
 				  i2c_clock_low(); i2c_delay();
 				  break;
+			case 'b': case 'm': case 'n':
+				// Adjust where to read or write data in EEPROM
+				if (c=='b') eeprom_address-=0x100;
+				if (c=='m') eeprom_address+=0x100;
+				if (c=='n') eeprom_address+=0x10;
+				if (eeprom_address<0) eeprom_address+=0x800;
+				if (eeprom_address>=0x800) eeprom_address-=0x800;
+				printfl("EPRADDR=$%x\r\n",eeprom_address);
+				break;
+			case 'w':
+				// Write a page of data to EEPROM.
+				// We copy the first 16 bytes from the TX buffer
+				// to write.
+				eeprom_poweron();
+				{
+					// Copy bytes from TX buffer
+					char i;
+					for(i=0;i<16;i++)
+						eeprom_data[i]=tx_buf[i];
+					if (eeprom_write_page(eeprom_address))
+						printfl("WRITE ERROR\r\n");
+					else
+						printf("EEPROM WRITTEN\r\n");
+					
+				}
+				eeprom_poweroff();
+				break;
 			}
 #endif				
 			} else if ((c=='E') && last_was_bang ) {
 				// Dump EEPROM contents
 				{
-					static __xdata unsigned short address;
 					unsigned char count=0;
 					eeprom_poweron();
 					printfl("\r\n");
 					while(1)
 						{
 							char i;
-							printfl("EPR:%x : ",address);
-							i=eeprom_read_page(address);
+							printfl("EPR:%x : ",eeprom_address);
+							i=eeprom_read_page(eeprom_address);
 							if (i) printfl("READ ERROR #%d",i);
 							else {
 								for(i=0;i<16;i++)
 									printfl(" %x",eeprom_data[i]);
 							}
 							printfl("\r\n");
-							address+=16;
-							if (address>=0x800) address=0;
+							eeprom_address+=16;
+							if (eeprom_address>=0x800) eeprom_address=0;
 							
 							count+=16;
 							if (count==0x80) break;

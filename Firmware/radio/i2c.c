@@ -151,6 +151,16 @@ char eeprom_write_byte(unsigned short address, unsigned char value)
   return 0;
 }
 
+char eeprom_write_page(unsigned short address)
+{
+  i2c_start();
+  if (i2c_tx(0xa0+((address>>7)&0xe))) return -1;
+  if (i2c_tx(address&0xff)) return -1;
+  for(char i=0;i<16;i++) if (i2c_tx(eeprom_data[i])) return -1;
+  i2c_stop();
+  return 0;
+}
+
 void eeprom_poweron(void)
 {
   pins_user_set_io(2,PIN_OUTPUT);
@@ -227,6 +237,12 @@ char eeprom_read_page(unsigned short address)
   return -1;
 }
 
+char eeprom_write_page(unsigned short address)
+{
+  address++; // suppress compiler warning
+  return -1;
+}
+
 
 #endif
 
@@ -234,12 +250,18 @@ void eeprom_load_parameters(void)
 {
   unsigned char i;
 
+  eeprom_poweron();
+  
   // Clear EEPROM data
   for(i=0;i<16;i++) eeprom_data[i]=0xff;
 
   // Read eeprom page from 0x7f0
   if (eeprom_read_page(0x7f0)) {
     printfl("NO EEPROM\r\n");
+
+    // No eeprom, so just use the normal saved parameters.
+
+    eeprom_poweroff();    
     return;
   }
 
@@ -247,9 +269,23 @@ void eeprom_load_parameters(void)
   // But first, check if it is valid.
   if ((eeprom_data[0xe]!='M')||(eeprom_data[0xf]!='E')) {
     printfl("INVALID EEPROM DATA\r\n");
+
+    // If we have no valid data, then we need to make sure we don't transmit
+    // illegally.  
+    param_set(PARAM_TXPOWER,0);
+
+    eeprom_poweroff();
+    return;
   }
 
-  printfl("EEPROM LOADED\r\n");
+  // Have valid EEPROM data
+
+  param_set(PARAM_TXPOWER,(eeprom_data[0]<<8)||eeprom_data[1]);
+  param_set(PARAM_AIR_SPEED,(eeprom_data[2]<<8)||eeprom_data[3]);
+  param_set(PARAM_FREQ,(eeprom_data[4]<<8)||eeprom_data[5]);
   
+  printfl("EEPROM LOADED\r\n");
+
+  eeprom_poweroff();
   return;
 }
