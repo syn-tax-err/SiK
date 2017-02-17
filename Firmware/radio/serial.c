@@ -179,11 +179,10 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if ((c=='E') && last_was_bang ) {
 				// Dump EEPROM contents
 				{
-					eeprom_poweron();
-					
 					static __xdata unsigned short address;
 					unsigned char byte;
 					unsigned char count;
+					eeprom_poweron();
 					if (!(address&0xf)) printfl("\r\n%x : ",address);
 					for(count=0;count<16;count++)
 						{
