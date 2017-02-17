@@ -117,14 +117,14 @@ unsigned char i2c_tx(unsigned char d)
 {
   unsigned char x;
 
-  i2c_clock_low(); 
+  i2c_clock_low(); i2c_delay();
   
   for(x=8;x;x--) {
     if (d&0x80) i2c_data_high(); else i2c_data_low();
     d<<=1;
     i2c_delay();
     i2c_clock_high(); i2c_delay();
-    i2c_clock_low();
+    i2c_clock_low(); i2c_delay();
   }
 
   return i2c_data_value();
