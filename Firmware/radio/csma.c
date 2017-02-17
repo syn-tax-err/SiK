@@ -400,7 +400,13 @@ csma_serial_loop(void)
 				putchar_r(0xec);				
 				for(i=0;i<6;i++) {
 #if PIN_MAX > 0
-					putchar_r(0x30+pins_user_get_adc(i));
+					if(pins_user_get_io(i) == PIN_INPUT)
+						putchar_r(0x30+pins_user_get_adc(i));
+					else
+						if (pins_user_get_value(i))
+							putchar_r('X');
+						else
+							putchar_r('x');
 #else
 					putchar_r(0xbd);
 #endif
