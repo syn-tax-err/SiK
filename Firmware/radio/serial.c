@@ -146,14 +146,6 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					BUF_REMOVE(rx,c);
 				}
 			} else if ((c>='a') &&(c<='z') && last_was_bang ) {
-				// Actions for the 6 GPIOs
-				// (note that reading the ADC values is handled
-				//  elsewhere).
-				// a-f : set output
-				// g-l : set input
-				// m-r : set output value = 0
-				// s-x : set output value = 1
-				// y-z : reserved
 				last_was_bang=0;
 #if PIN_MAX > 0
 				// I2C debug functions
@@ -166,6 +158,12 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			case 'x': i2c_clock_low(); break;
 			case 'd': i2c_data_high(); break;
 			case 'c': i2c_data_low(); break;
+			case 'y':
+				// Disable write-protect temporarily
+				// (writing to EEPROM reasserts it automatically)
+				pins_user_set_io(5,PIN_OUTPUT);
+				pins_user_set_value(5,0);
+				break;
 			case 'f': i2c_clock_low(); i2c_delay();
 				  i2c_data_high(); i2c_delay();
 				  i2c_clock_high(); i2c_delay();
@@ -202,6 +200,9 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					
 				}
 				eeprom_poweroff();
+				// Re-enable write-protect
+				pins_user_set_io(5,PIN_INPUT);
+				pins_user_set_value(5,1);
 				break;
 			}
 #endif				
