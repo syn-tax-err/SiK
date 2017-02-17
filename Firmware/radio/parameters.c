@@ -55,15 +55,19 @@ __code const struct parameter_info {
 	const char	*name;
 	param_t		default_value;
 } parameter_info[PARAM_MAX] = {
+	// Default parameters should be to not transmit
+	// the idea is that permission to transmit, and on which
+	// frequency, comes from the serial EEPROM in the Mesh Extender
+	// power cable.
 	{"FORMAT",         PARAM_FORMAT_CURRENT},
-	{"SERIAL_SPEED",   230}, // match APM default of 57600
-	{"AIR_SPEED",      128}, // relies on MAVLink flow control
+	{"SERIAL_SPEED",   230},
+	{"AIR_SPEED",      128},
 	{"NETID",          0x4110},
-	{"TXPOWER",        20},
+	{"TXPOWER",         0},
 	{"ECC",             0},
 	{"OPPRESEND",       0},
 	{"FREQ",            923000},
-	{"DUTY_CYCLE",    100},
+	{"DUTY_CYCLE",      0},
 	{"LBT_RSSI",        80},
 	{"MANCHESTER",      0},
 	{"RTSCTS",          0},
@@ -250,7 +254,7 @@ __critical {
 	
 	// loop reading the parameters array
 	expected = flash_read_scratch(PARAM_FLASH_START);
-	if (expected > sizeof(parameter_values) || expected < 12*sizeof(param_t))
+	if (expected > sizeof(parameter_values) || expected < (PARAM_MAX+1)*sizeof(param_t))
 		return false;
 	
 	// read and verify params
