@@ -18,7 +18,7 @@ void i2c_delay(void)
   
   // Will this be enough?
   for(i=0;i!=i2c_delay_counter;i++)
-    for(k=0;k!=0xff;k++)
+    for(k=0;k!=0x0f;k++)
       continue;
     
 }
