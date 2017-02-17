@@ -193,6 +193,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 							else
 								printfl(" %x",byte);
 							address++;
+							if (address>=0x800) address=0;
 							if (!(address&0xf)) printfl("\r\n");
 							count++;
 							if (count==0x80) break;
