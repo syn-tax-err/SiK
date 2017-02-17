@@ -197,7 +197,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 							address+=16;
 							if (address>=0x800) address=0;
 							
-							count++;
+							count+=16;
 							if (count==0x80) break;
 						}
 
