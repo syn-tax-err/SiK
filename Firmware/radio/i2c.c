@@ -23,13 +23,14 @@ void i2c_delay(void)
     
 }
 
-void i2c_clock_high(void)
+// How and why does the clock control need to be backwards???
+void i2c_clock_low(void)
 {
   pins_user_set_io(3,PIN_INPUT);
   pins_user_set_value(3,1);
 }
 
-void i2c_clock_low(void)
+void i2c_clock_high(void)
 {
   pins_user_set_io(3,PIN_OUTPUT);
   pins_user_set_value(3,0);
