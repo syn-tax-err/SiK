@@ -195,9 +195,6 @@ param_set(__data enum ParamID param, __pdata param_t value)
 		feature_rtscts = value?true:false;
 		value = feature_rtscts?1:0;
 		break;
-
-	case PARAM_I2CDELAY:
-		i2c_delay_counter = value;
 		
 	default:
 		break;

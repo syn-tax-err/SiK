@@ -5,7 +5,6 @@
 #include "crc.h"
 #include "pins_user.h"
 
-__xdata unsigned short i2c_delay_counter=1;
 __xdata unsigned char eeprom_data[16];
 
 #if PIN_MAX>0
@@ -16,6 +15,7 @@ void i2c_delay(void)
 
   unsigned short i;
   unsigned char k;
+  unsigned short i2c_delay_counter = param_get(PARAM_I2CDELAY);
   
   // Will this be enough?
   for(i=0;i!=i2c_delay_counter;i++)
