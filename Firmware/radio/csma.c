@@ -400,6 +400,20 @@ csma_serial_loop(void)
 				// for ease of human readability, while remaining
 				// unambigious for machine decoding
 				puts_r("📥");
+
+				// Now put radio temperature in human and machine
+				// readable format.  Needs to be safe for -ve
+				// temperatures as well.
+				if (radio_temperature()<0)
+					{ putchar_r('-'); i=-radio_temperature(); }
+				else
+					{ putchar_r('+'); i=radio_temperature(); }
+				if (i>99) putchar_r('0'+i/100); else putchar_r('0');
+				i=i%100;
+				if (i>9) putchar_r('0'+i/10); else putchar_r('0');
+				i=i%10;
+				putchar_r('0'+i);
+				puts_r("°");
 				for(i=0;i<6;i++) {
 #if PIN_MAX > 0
 					if(pins_user_get_io(i) == PIN_INPUT)
