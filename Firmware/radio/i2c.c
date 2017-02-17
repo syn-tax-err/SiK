@@ -60,6 +60,7 @@ unsigned char i2c_data_value(void)
 
 void i2c_stop(void)
 {
+  i2c_data_low();  i2c_delay();
   i2c_clock_high(); i2c_delay();
   i2c_data_high();  i2c_delay();
 
@@ -67,10 +68,10 @@ void i2c_stop(void)
 
 void i2c_start(void)
 {
-  i2c_stop();
+  i2c_data_high();  i2c_delay();
+  i2c_clock_high(); i2c_delay();
   
   i2c_data_low();  i2c_delay();
-  i2c_clock_low(); i2c_delay();
 }
 
 unsigned char i2c_rx(char ack)
@@ -96,20 +97,19 @@ unsigned char i2c_rx(char ack)
 
     if (i2c_data_value()) d|=1;
 
-    i2c_clock_low();
-    i2c_delay();
+    i2c_clock_low(); i2c_delay();
   }
 
-  // Send ack
+  // Send [n]ack
   if (ack) i2c_data_low(); else i2c_data_high();
-
   i2c_delay();
-  i2c_clock_high();
-  i2c_delay();
+  
+  i2c_clock_high(); i2c_delay();
 
-  // send ACK/NACK
+  // Finish ACK/NACK
   i2c_clock_low(); i2c_delay();
   i2c_data_high(); i2c_delay();
+  
   return d;
 }
 
@@ -127,7 +127,17 @@ unsigned char i2c_tx(unsigned char d)
     i2c_clock_low(); i2c_delay();
   }
 
-  return i2c_data_value();
+  // Re-float data so that we can read ACK
+  i2c_data_high(); i2c_delay();
+  i2c_clock_high(); i2c_delay();
+
+  // Read ACK
+  x=i2c_data_value();
+
+  // Close ACK clock pulse
+  i2c_clock_low(); i2c_delay();
+  
+  return x;
 }
 
 char eeprom_write_byte(unsigned short address, unsigned char value)
@@ -159,9 +169,9 @@ char eeprom_read_byte(unsigned short address, char *byte)
   i2c_start();
   if (i2c_tx(0xa0+((address>>7)&0xe))) { *byte=1; i2c_stop(); return -1; }
   if (i2c_tx(address&0xff)) { *byte=2; i2c_stop(); return -1; }
-  i2c_stop();
 
   i2c_start();
+  
   if (i2c_tx(0xa1+((address>>7)&0xe))) { *byte=3; i2c_stop(); return -1; }
 
   *byte=i2c_rx(1);
