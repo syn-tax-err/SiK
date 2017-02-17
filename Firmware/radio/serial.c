@@ -183,9 +183,10 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					unsigned char byte;
 					unsigned char count=0;
 					eeprom_poweron();
+					printfl("\r\n");
 					while(1)
 						{
-							if (!(address&0xf)) printfl("\r\n%x : ",address);
+							if (!(address&0xf)) printfl("EPR:%x : ",address);
 							byte=0x00;
 							if (eeprom_read_byte(address,&byte))
 								printfl(" !!%x",byte);
@@ -194,7 +195,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 							address++;
 							if (!(address&0xf)) printfl("\r\n");
 							count++;
-							if (!count) break;
+							if (count!=0x80) break;
 						}
 
 					eeprom_poweroff();
