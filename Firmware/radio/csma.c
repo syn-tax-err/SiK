@@ -399,7 +399,11 @@ csma_serial_loop(void)
 				// Wrap in fun UTF-8 symbols
 				// for ease of human readability, while remaining
 				// unambigious for machine decoding
-				puts_r("📥");
+				// puts_r("📥");
+				putchar_r(0xF0);
+				putchar_r(0x9F);
+				putchar_r(0x93);
+				putchar_r(0xA5);
 
 				// Now put radio temperature in human and machine
 				// readable format.  Needs to be safe for -ve
@@ -413,7 +417,8 @@ csma_serial_loop(void)
 				if (i>9) putchar_r('0'+i/10); else putchar_r('0');
 				i=i%10;
 				putchar_r('0'+i);
-				puts_r("°");
+				// puts_r("°");
+				putchar_r(0xc2); putchar_r(0xb0);
 				for(i=0;i<6;i++) {
 #if PIN_MAX > 0
 					if(pins_user_get_io(i) == PIN_INPUT)
@@ -433,7 +438,12 @@ csma_serial_loop(void)
 				putchar_r('0'+(g_board_frequency>>4));
 				putchar_r('0'+(g_board_frequency&0xf));
 
-				puts_r("📤");
+				// puts_r("📤");
+				putchar_r(0xF0);
+				putchar_r(0x9F);
+				putchar_r(0x93);
+				putchar_r(0xA4);
+
 				
 				// CR LF for convenience
 				putchar_r(0x0d);
