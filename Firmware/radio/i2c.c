@@ -5,7 +5,7 @@
 #include "crc.h"
 #include "pins_user.h"
 
-__xdata unsigned short i2c_delay_counter=50000;
+__xdata unsigned short i2c_delay_counter=50;
 
 #if PIN_MAX>0
 
