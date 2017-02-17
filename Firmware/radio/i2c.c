@@ -90,7 +90,7 @@ unsigned char i2c_rx(char ack)
     i2c_delay();
 
     // Wait for any clock stretching
-    while (i2c_clock_value()) {
+    while (!i2c_clock_value()) {
       timeout--; if (!timeout) return 0x54;
       i2c_delay();
     }
