@@ -195,7 +195,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 							address++;
 							if (!(address&0xf)) printfl("\r\n");
 							count++;
-							if (count!=0x80) break;
+							if (count==0x80) break;
 						}
 
 					eeprom_poweroff();
