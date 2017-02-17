@@ -1,3 +1,4 @@
+void i2c_delay(void);
 void i2c_stop(void);
 void i2c_start(void);
 unsigned char i2c_rx(char ack);

@@ -154,12 +154,25 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				// y-z : reserved
 				last_was_bang=0;
 #if PIN_MAX > 0
-				if (c<'g') pins_user_set_io(c-'a', PIN_OUTPUT);
-				else if (c<'m') pins_user_set_io(c-'g',PIN_INPUT);
-				else if (c<'s') pins_user_set_value(c-'m',0);
-				else if (c<'y') pins_user_set_value(c-'s',1);
-				else if (c=='y') i2c_data_low();
-				else if (c=='z') i2c_data_high();
+				// I2C debug functions
+		        switch (c) {
+			case 'a': i2c_start(); break;
+			case 'z': i2c_stop(); break; 
+			case 's': i2c_clock_high(); break;
+			case 'x': i2c_clock_low(); break;
+			case 'd': i2c_data_high(); break;
+			case 'c': i2c_data_low(); break;
+			case 'f': i2c_clock_low(); i2c_delay();
+				  i2c_data_high(); i2c_delay();
+				  i2c_clock_high(); i2c_delay();
+				  i2c_clock_low(); i2c_delay();
+				  break;
+			case 'v': i2c_clock_low(); i2c_delay();
+				  i2c_data_low(); i2c_delay();
+				  i2c_clock_high(); i2c_delay();
+				  i2c_clock_low(); i2c_delay();
+				  break;
+			}
 #endif				
 			} else if ((c=='E') && last_was_bang ) {
 				// Dump EEPROM contents
