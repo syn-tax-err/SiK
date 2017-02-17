@@ -229,3 +229,27 @@ char eeprom_read_page(unsigned short address)
 
 
 #endif
+
+void eeprom_load_parameters(void)
+{
+  unsigned char i;
+
+  // Clear EEPROM data
+  for(i=0;i<16;i++) eeprom_data[i]=0xff;
+
+  // Read eeprom page from 0x7f0
+  if (eeprom_read_page(0x7f0)) {
+    printfl("NO EEPROM\r\n");
+    return;
+  }
+
+  // Read EEPROM data, so do something with it.
+  // But first, check if it is valid.
+  if ((eeprom_data[0xe]!='M')||(eeprom_data[0xf]!='E')) {
+    printfl("INVALID EEPROM DATA\r\n");
+  }
+
+  printfl("EEPROM LOADED\r\n");
+  
+  return;
+}

@@ -13,6 +13,7 @@ void eeprom_poweroff(void);
 char eeprom_write_byte(unsigned short address, unsigned char value);
 char eeprom_read_byte(unsigned short address, char *byte);
 char eeprom_read_page(unsigned short address);
+void eeprom_load_parameters(void);
 
 extern __xdata unsigned char eeprom_data[16];
 

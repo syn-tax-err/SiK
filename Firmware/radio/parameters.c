@@ -272,6 +272,9 @@ __critical {
 			parameter_values[i] = parameter_info[i].default_value;
 		}
 	}
+
+	// Then try to load radio parameters from the serial EEPROM
+	eeprom_load_parameters();
 	
 	// read and verify pin params
 #if PIN_MAX > 0
