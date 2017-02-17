@@ -181,9 +181,9 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				{
 					static __xdata unsigned short address;
 					unsigned char byte;
-					unsigned char count;
+					unsigned char count=0;
 					eeprom_poweron();
-					for(count=0;count<256;count++)
+					while(1)
 						{
 							if (!(address&0xf)) printfl("\r\n%x : ",address);
 							byte=0x00;
@@ -193,6 +193,8 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 								printfl(" %x",byte);
 							address++;
 							if (!(address&0xf)) printfl("\r\n");
+							count++;
+							if (!count) break;
 						}
 
 					eeprom_poweroff();
