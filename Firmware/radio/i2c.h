@@ -8,6 +8,8 @@ void i2c_clock_low(void);
 void i2c_data_high(void);
 void i2c_data_low(void);
 
+void eeprom_poweron(void);
+void eeprom_poweroff(void);
 char eeprom_write_byte(unsigned short address, unsigned char value);
 char eeprom_read_byte(unsigned short address, char *byte);
 

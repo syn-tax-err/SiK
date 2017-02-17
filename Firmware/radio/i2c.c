@@ -140,8 +140,21 @@ char eeprom_write_byte(unsigned short address, unsigned char value)
   return 0;
 }
 
-char eeprom_read_byte(unsigned short address, char *byte)
+void eeprom_poweron(void)
 {
+  pins_user_set_io(2,PIN_OUTPUT);
+  pins_user_set_value(2,1);
+}
+
+void eeprom_poweroff(void)
+{
+  pins_user_set_io(2,PIN_OUTPUT);
+  pins_user_set_value(2,0);
+}
+
+
+char eeprom_read_byte(unsigned short address, char *byte)
+{  
   // Setup for a write, then abort it, to set memory pointer
   i2c_start();
   if (i2c_tx(0xa0+((address>>7)&0xe))) { *byte=1; i2c_stop(); return -1; }

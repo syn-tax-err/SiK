@@ -156,6 +156,8 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 #if PIN_MAX > 0
 				// I2C debug functions
 		        switch (c) {
+			case 'p': eeprom_poweron(); break;
+			case 'o': eeprom_poweroff(); break;
 			case 'a': i2c_start(); break;
 			case 'z': i2c_stop(); break; 
 			case 's': i2c_clock_high(); break;
@@ -177,6 +179,8 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if ((c=='E') && last_was_bang ) {
 				// Dump EEPROM contents
 				{
+					eeprom_poweron();
+					
 					static __xdata unsigned short address;
 					unsigned char byte;
 					unsigned char count;
@@ -191,6 +195,9 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 							address++;
 						}
 					printfl("\r\n");
+
+					eeprom_poweroff();
+					
 					last_was_bang=0;
 				}
 			} else if ((c=='F') && last_was_bang ) {
