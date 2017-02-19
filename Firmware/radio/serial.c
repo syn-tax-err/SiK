@@ -257,6 +257,9 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				// Identify radio firmware by series of checksums of flash
 				last_was_bang=0;
 				flash_report_summary();
+			} else if ((c=='0') && last_was_bang ) {
+				// Empty packet buffer
+				rx_insert=0; rx_remove=0;
 			} else if ((c=='H') && last_was_bang ) {
 				last_was_bang=0;
 				param_set(PARAM_TXPOWER,25);
