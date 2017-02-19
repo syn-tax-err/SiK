@@ -10,6 +10,8 @@ void i2c_data_low(void);
 
 void eeprom_poweron(void);
 void eeprom_poweroff(void);
+void eeprom_writeprotect(void);
+void eeprom_writeenable(void);
 char eeprom_write_byte(unsigned short address, unsigned char value);
 char eeprom_read_byte(unsigned short address, char *byte);
 char eeprom_read_page(unsigned short address);

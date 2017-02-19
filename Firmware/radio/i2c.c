@@ -153,16 +153,37 @@ char eeprom_write_byte(unsigned short address, unsigned char value)
 
 char eeprom_write_page(unsigned short address)
 {
+  // Slow down I2C bus when writing, as otherwise it doesn't work
+  __xdata unsigned short old_i2c_delay=param_get(PARAM_I2CDELAY);
+  param_set(PARAM_I2CDELAY,1000);
+  
   i2c_start();
-  if (i2c_tx(0xa0+((address>>7)&0xe))) return -1;
-  if (i2c_tx(address&0xff)) return -1;
+  if (i2c_tx(0xa0+((address>>7)&0xe))) goto fail;
+  if (i2c_tx(address&0xff)) goto fail;
   for(char i=0;i<16;i++) {
-    if (i2c_tx(eeprom_data[i])) return -1;
+    if (i2c_tx(eeprom_data[i])) goto fail;
     printfl(" %x",eeprom_data[i]);
   }
   printfl("\r\n");
   i2c_stop();
+  param_set(PARAM_I2CDELAY,old_i2c_delay);
   return 0;
+
+ fail:
+    param_set(PARAM_I2CDELAY,old_i2c_delay);
+    return -1;
+}
+
+void eeprom_writeprotect(void)
+{
+  pins_user_set_io(5,PIN_INPUT);
+  pins_user_set_value(5,1);
+}
+
+void eeprom_writeenable(void)
+{
+  pins_user_set_io(5,PIN_OUTPUT);
+  pins_user_set_value(5,0);
 }
 
 void eeprom_poweron(void)
