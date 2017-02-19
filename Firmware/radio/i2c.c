@@ -109,7 +109,7 @@ unsigned char i2c_rx(char ack)
 
   // Finish ACK/NACK
   i2c_clock_low(); i2c_delay();
-  i2c_data_high(); i2c_delay();
+  //  i2c_data_high(); i2c_delay();
   
   return d;
 }
@@ -156,7 +156,11 @@ char eeprom_write_page(unsigned short address)
   i2c_start();
   if (i2c_tx(0xa0+((address>>7)&0xe))) return -1;
   if (i2c_tx(address&0xff)) return -1;
-  for(char i=0;i<16;i++) if (i2c_tx(eeprom_data[i])) return -1;
+  for(char i=0;i<16;i++) {
+    if (i2c_tx(eeprom_data[i])) return -1;
+    printfl(" %x",eeprom_data[i]);
+  }
+  printflf("\r\n");
   i2c_stop();
   return 0;
 }
