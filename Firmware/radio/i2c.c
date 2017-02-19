@@ -160,7 +160,7 @@ char eeprom_write_page(unsigned short address)
     if (i2c_tx(eeprom_data[i])) return -1;
     printfl(" %x",eeprom_data[i]);
   }
-  printflf("\r\n");
+  printlf("\r\n");
   i2c_stop();
   return 0;
 }
