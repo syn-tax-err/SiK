@@ -106,6 +106,14 @@ static void serial_device_set_speed(register uint8_t speed);
 #define SERIAL_CTS_THRESHOLD_LOW  17
 #define SERIAL_CTS_THRESHOLD_HIGH 34
 
+uint8_t hex_decode(uint8_t c)
+{
+	if ((c>='0')&&(c<='9')) return c-'0';
+	if ((c>='A')&&(c<='F')) return c-'A'-10;
+	if ((c>='a')&&(c<='f')) return c-'a'-10;
+	return 0;
+}
+
 void
 serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 {
@@ -161,8 +169,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			case 'y':
 				// Disable write-protect temporarily
 				// (writing to EEPROM reasserts it automatically)
-				pins_user_set_io(5,PIN_OUTPUT);
-				pins_user_set_value(5,0);
+				eeprom_writeenable();
 				break;
 			case 'f': i2c_clock_low(); i2c_delay();
 				  i2c_data_high(); i2c_delay();
@@ -175,25 +182,37 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				  i2c_clock_low(); i2c_delay();
 				  break;
 			case 'b': case 'm': case 'n':
+			case 'g':
 				// Adjust where to read or write data in EEPROM
 				if (c=='b') eeprom_address-=0x100;
 				if (c=='m') eeprom_address+=0x100;
 				if (c=='n') eeprom_address+=0x10;
+				if (c=='g') {
+					// Allow things like 1a0!g to set EEPROM pointer to 0x1a0
+					eeprom_address=0;
+					while (BUF_NOT_EMPTY(rx)) {
+						eeprom_address=eeprom_address<<4;
+						eeprom_address+=hex_decode(serial_read());
+					}
+				}
 				if (eeprom_address<0) eeprom_address+=0x800;
 				if (eeprom_address>=0x800) eeprom_address-=0x800;
 				printfl("EPRADDR=$%x\r\n",eeprom_address);
 				break;
 			case 'w':
 				// Write a page of data to EEPROM.
-				// We copy the first 16 bytes from the TX buffer
+				// We copy the first 16 bytes from the serial buffer
 				// to write.
+				// XXX - Will read rubbish if less than 16 bytes are
+				// available.
+				
 				eeprom_poweron();
 				printfl("\r\n");
 				{
 					// Copy bytes from TX buffer
 					char i;
 					for(i=0;i<16;i++)
-						eeprom_data[i]=tx_buf[i];
+						eeprom_data[i]=serial_read();
 					if (eeprom_write_page(eeprom_address))
 						printfl("WRITE ERROR\r\n");
 					else
@@ -202,8 +221,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				}
 				eeprom_poweroff();
 				// Re-enable write-protect
-				pins_user_set_io(5,PIN_INPUT);
-				pins_user_set_value(5,1);
+				eeprom_writeprotect();
 				break;
 			}
 #endif				
