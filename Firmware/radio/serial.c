@@ -260,17 +260,11 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if ((c=='0') && last_was_bang ) {
 				// Empty packet buffer
 				rx_insert=0; rx_remove=0;
-			} else if ((c=='H') && last_was_bang ) {
-				last_was_bang=0;
-				param_set(PARAM_TXPOWER,25);
 			} else if ((c=='Z') && last_was_bang ) {
 				// Trigger a reset of radio by software (like ATZ)
 				RSTSRC |= (1 << 4);
 	                        for (;;)
        	                         ;
-			} else if ((c=='L') && last_was_bang ) {
-				last_was_bang=0;
-				param_set(PARAM_TXPOWER,1);
 			} else if ((c=='R') && last_was_bang ) {
 				// Reset radio to default settings (like AT&F)
 				param_default();
