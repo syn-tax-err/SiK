@@ -155,7 +155,7 @@ char eeprom_write_page(unsigned short address)
 {
   // Slow down I2C bus when writing, as otherwise it doesn't work
   __xdata unsigned short old_i2c_delay=param_get(PARAM_I2CDELAY);
-  param_set(PARAM_I2CDELAY,1000);
+  param_set(PARAM_I2CDELAY,5000);
   
   i2c_start();
   if (i2c_tx(0xa0+((address>>7)&0xe))) goto fail;
