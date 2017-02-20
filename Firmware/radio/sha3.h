@@ -78,4 +78,4 @@ void sha3_Init256(void);
 void sha3_Init384(void);
 void sha3_Init512(void);
 void sha3_Update(void *bufIn, size_t len);
-void const *sha3_Finalize(void);
+void sha3_Finalize(void);

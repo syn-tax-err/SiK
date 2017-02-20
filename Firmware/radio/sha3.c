@@ -211,7 +211,7 @@ __xdata uint32_t t1;
 __xdata uint32_t t2;
 __xdata uint8_t word;
 
-void const *sha3_Finalize(void)
+void sha3_Finalize(void)
 {
   
     SHA3_TRACE("called with %d bytes in the buffer", ctx.byteIndex);
@@ -259,5 +259,5 @@ void const *sha3_Finalize(void)
 
     SHA3_TRACE_BUF("Hash: (first 32 bytes)", ctx.sb, 256 / 8);
 
-    return (ctx.sb);
+    // return (ctx.sb);
 }
