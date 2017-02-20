@@ -47,7 +47,7 @@
 // 8 TDM time slots
 //
 
-#define RX_BUFF_MAX 512
+#define RX_BUFF_MAX 256
 #define TX_BUFF_MAX 512
 
 __xdata uint8_t rx_buf[RX_BUFF_MAX] = {0};
