@@ -158,15 +158,32 @@ char eeprom_write_page(unsigned short address)
   param_set(PARAM_I2CDELAY,5000);
   
   i2c_start();
+
+  // Due to slowness, show pretty lights while writing
+  LED_RADIO = LED_ON;
+  LED_ACTIVITY = LED_ON;
+  
   if (i2c_tx(0xa0+((address>>7)&0xe))) goto fail;
   if (i2c_tx(address&0xff)) goto fail;
   for(char i=0;i<16;i++) {
     if (i2c_tx(eeprom_data[i])) goto fail;
     printfl(" %x",eeprom_data[i]);
+
+    if (i&1) {
+      LED_RADIO = LED_ON;
+      LED_ACTIVITY = LED_OFF;
+    } else {
+      LED_RADIO = LED_OFF;
+      LED_ACTIVITY = LED_ON;
+    }
+    
   }
   printfl("\r\n");
   i2c_stop();
   param_set(PARAM_I2CDELAY,old_i2c_delay);
+  LED_RADIO = LED_OFF;
+  LED_ACTIVITY = LED_ON;
+
   return 0;
 
  fail:
