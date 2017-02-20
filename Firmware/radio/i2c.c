@@ -9,13 +9,14 @@ __xdata unsigned char eeprom_data[16];
 
 #if PIN_MAX>0
 
+__xdata unsigned short i;
+__xdata unsigned char k;
+__xdata unsigned short i2c_delay_counter;
+
 void i2c_delay(void)
 {
   // 10 microsecond delay
-
-  unsigned short i;
-  unsigned char k;
-  unsigned short i2c_delay_counter = param_get(PARAM_I2CDELAY);
+  i2c_delay_counter = param_get(PARAM_I2CDELAY);
   
   // Will this be enough?
   for(i=0;i!=i2c_delay_counter;i++)
@@ -75,12 +76,12 @@ void i2c_start(void)
   i2c_data_low();  i2c_delay();
 }
 
+__xdata char x,d,timeout;
+
 unsigned char i2c_rx(char ack)
 {
-  char x=0;
-  char d=0;
-  char timeout=255;
-
+  x=0; d=0; timeout=255;
+  
   i2c_data_high();
   i2c_delay();
 
@@ -116,8 +117,6 @@ unsigned char i2c_rx(char ack)
 
 unsigned char i2c_tx(unsigned char d)
 {
-  unsigned char x;
-
   i2c_clock_low(); i2c_delay();
   
   for(x=8;x;x--) {
@@ -215,8 +214,7 @@ char eeprom_write_page(unsigned short address)
   // This will fail, until such time as the writing has completed.
 
   {
-    unsigned char byte;
-    while (eeprom_read_byte(0x0,&byte)) i2c_delay();
+    while (eeprom_read_byte(0x0,&x)) i2c_delay();
   }
 
   printfl("\r\n");
@@ -296,13 +294,8 @@ char eeprom_write_page(unsigned short address)
 
 void eeprom_load_parameters(void)
 {
-  unsigned char i;
-
   eeprom_poweron();
   
-  // Clear EEPROM data
-  for(i=0;i<16;i++) eeprom_data[i]=0xff;
-
   // Read eeprom page from 0x7f0
   if (eeprom_read_page(0x7f0)) {
     printfl("NO EEPROM\r\n");
