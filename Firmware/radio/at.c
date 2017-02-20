@@ -199,6 +199,7 @@ at_timer(void)
 				break;
 			default:
 				// should never happen, but otherwise harmless
+				;
 			}
 		}
 	}
@@ -299,10 +300,10 @@ at_parse_number() __reentrant
 	}
 }
 
-static void print_ID_vals(char param, uint8_t end,
-                          const char *__code (*name_param)(__data enum ParamID param),
-                          param_t (*get_param)(__data enum ParamID param)
-                         )
+void print_ID_vals(char param, uint8_t end,
+		   const char *__code (*name_param)(__data enum ParamID param),
+		   param_t (*get_param)(__data enum ParamID param)
+		   )
 {
   register enum ParamID id;
   // convenient way of showing all parameters

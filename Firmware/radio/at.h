@@ -68,6 +68,13 @@ extern void	at_input(register uint8_t c);
 ///
 extern void	at_command(void);
 
+// Print current S parameter values
+void print_ID_vals(char param, uint8_t end,
+		   const char *__code (*name_param)(__data enum ParamID param),
+		   param_t (*get_param)(__data enum ParamID param)
+		   );
+
+
 /// AT_TEST_* test modes
 extern __pdata uint8_t  at_testmode;    ///< AT_TEST_* bits
 
