@@ -181,13 +181,15 @@ char eeprom_write_page(unsigned short address)
   printfl("\r\n");
   i2c_stop();
   param_set(PARAM_I2CDELAY,old_i2c_delay);
-  LED_RADIO = LED_OFF;
-  LED_ACTIVITY = LED_ON;
+  LED_RADIO = LED_ON;
+  LED_ACTIVITY = LED_OFF;
 
   return 0;
 
  fail:
     param_set(PARAM_I2CDELAY,old_i2c_delay);
+    LED_RADIO = LED_ON;
+    LED_ACTIVITY = LED_OFF;
     return -1;
 }
 
