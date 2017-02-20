@@ -114,12 +114,15 @@ uint8_t hex_decode(uint8_t c)
 	return 0;
 }
 
+__xdata unsigned char count;
+__xdata char i;
+__xdata short eeprom_address = 0;
+
+
 void
 serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 {
-	register uint8_t	c;
-	static __xdata short eeprom_address;
-						
+	register uint8_t	c;						
 
 	// check for received byte first
 	if (RI0) {
@@ -228,12 +231,11 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if ((c=='E') && last_was_bang ) {
 				// Dump EEPROM contents
 				{
-					unsigned char count=0;
+					count=0;
 					eeprom_poweron();
 					printfl("\r\n");
 					while(1)
 						{
-							char i;
 							printfl("EPR:%x : ",eeprom_address);
 							i=eeprom_read_page(eeprom_address);
 							if (i) printfl("READ ERROR #%d",i);
@@ -260,9 +262,6 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if ((c=='0') && last_was_bang ) {
 				// Empty packet buffer
 				rx_insert=0; rx_remove=0;
-			} else if ((c=='5') && last_was_bang ) {
-				// Easily print current parameters for convenience
-				print_ID_vals(' ', PARAM_MAX, param_name, param_get);
 			} else if ((c=='Z') && last_was_bang ) {
 				// Trigger a reset of radio by software (like ATZ)
 				RSTSRC |= (1 << 4);
