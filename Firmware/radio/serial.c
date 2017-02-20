@@ -260,6 +260,9 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if ((c=='0') && last_was_bang ) {
 				// Empty packet buffer
 				rx_insert=0; rx_remove=0;
+			} else if ((c=='5') && last_was_bang ) {
+				// Easily print current parameters for convenience
+				print_ID_vals(' ', PARAM_MAX, param_name, param_get);
 			} else if ((c=='Z') && last_was_bang ) {
 				// Trigger a reset of radio by software (like ATZ)
 				RSTSRC |= (1 << 4);
