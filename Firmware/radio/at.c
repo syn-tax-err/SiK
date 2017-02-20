@@ -58,7 +58,6 @@ static void	at_error(void);
 static void	at_i(void);
 static void	at_s(void);
 static void	at_ampersand(void);
-static void	at_p(void);
 
 #pragma save
 #pragma nooverlay
@@ -206,13 +205,6 @@ at_timer(void)
 }
 #pragma restore
 
-void hashlittle2( 
-  const void *key,       /* the key to hash */
-  size_t      length,    /* length of the key */
-  uint32_t   *pc,        /* IN: primary initval, OUT: primary hash */
-  uint32_t   *pb);        /* IN: secondary initval, OUT: secondary hash */
-
-
 void
 at_command(void)
 {
@@ -239,9 +231,6 @@ at_command(void)
 				break;
 			case 'I':
 				at_i();
-				break;
-			case 'P':
-				at_p();
 				break;
 			case 'O':		// O -> go online (exit command mode)
 				at_plus_counter = ATP_COUNT_1S;
@@ -350,10 +339,11 @@ at_i(void)
   }
 }
 
+__xdata uint8_t		sreg;
+
 static void
 at_s(void)
 {
-	__pdata uint8_t		sreg;
 
 	// get the register number first
 	idx = 3;
@@ -435,68 +425,4 @@ at_ampersand(void)
 		at_error();
 		break;
 	}
-}
-
-static void
-at_p (void)
-{
-#if PIN_MAX > 0
-	__pdata uint8_t pinId;
-	if(at_cmd[3] == 'P')
-	{
-		for (pinId = 0; pinId < PIN_MAX; pinId++)
-		{
-			printf("Pin:%u ", pinId);
-			if (pins_user_get_io(pinId))
-				printf("Output ");
-			else
-				printf("Input  ");
-			printf("Val: %u\n",pins_user_get_value(pinId));
-		}
-		return;
-	}
-	else if(at_cmd[4] != '=' || !isdigit(at_cmd[5]))
-	{
-		at_error();
-		return;
-	}
-	
-	pinId = at_cmd[5] - '0';
-	
-	switch (at_cmd[3]) {
-			
-			// Set pin to output, turn mirroring off pulling pin to ground
-		case 'O':
-			pins_user_set_io(pinId, PIN_OUTPUT);
-			break;
-			
-			// Need to figure out how to set pins to Input/Output
-		case 'I':
-			pins_user_set_io(pinId, PIN_INPUT);
-			break;
-			
-		case 'R':
-			if(pins_user_get_io(pinId) == PIN_INPUT)
-				printf("val:%u\n", pins_user_get_adc(pinId));
-			else
-				at_error();
-			return;
-			break;
-			
-		case 'C':
-			if(!isdigit(at_cmd[7]) || !pins_user_set_value(pinId, (at_cmd[7]-'0')?1:0))
-			{
-				at_error();
-				return;
-			}
-			break;
-		default:
-			at_error();
-			return;
-	}
-	
-	at_ok();
-#else
-	at_error();
-#endif
 }

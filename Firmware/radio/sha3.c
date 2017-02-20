@@ -48,39 +48,44 @@ __xdata struct sha3_context ctx;
 /* generally called after SHA3_KECCAK_SPONGE_WORDS-ctx->capacityWords words 
  * are XORed into the state s 
  */
+uint64_t t, bc[5];
+uint8_t n, j, r, round;
 static void keccakf(void)
 {
-    __xdata static int i, j, round;
-    __xdata static uint64_t t, bc[5];
 #define KECCAK_ROUNDS 24
 
     for(round = 0; round < KECCAK_ROUNDS; round++) {
+      /* Theta */
+      for(n = 0; n < 5; n++) {
+	bc[n] = ctx.s[n];
+	bc[n]^=ctx.s[n + 5];
+	bc[n]^=ctx.s[n + 10];
+	bc[n]^=ctx.s[n + 15];
+	bc[n]^=ctx.s[n + 20];
+      }
 
-        /* Theta */
-        for(i = 0; i < 5; i++)
-            bc[i] = ctx.s[i] ^ ctx.s[i + 5] ^ ctx.s[i + 10] ^ ctx.s[i + 15] ^ ctx.s[i + 20];
-
-        for(i = 0; i < 5; i++) {
-            t = bc[(i + 4) % 5] ^ SHA3_ROTL64(bc[(i + 1) % 5], 1);
+        for(n = 0; n < 5; n++) {
+	    t = bc[(n + 4) % 5] ^ SHA3_ROTL64(bc[(n + 1) % 5], 1);
             for(j = 0; j < 25; j += 5)
-                ctx.s[j + i] ^= t;
+                ctx.s[j + n] ^= t;
         }
 
         /* Rho Pi */
         t = ctx.s[1];
-        for(i = 0; i < 24; i++) {
-            j = keccakf_piln[i];
-            bc[0] = ctx.s[j];
-            ctx.s[j] = SHA3_ROTL64(t, keccakf_rotc[i]);
+        for(n = 0; n < 24; n++) {
+	    j = keccakf_piln[n];
+            bc[0] = ctx.s[j];	    
+	    for (r=0;r<keccakf_rotc[n];r++) t=SHA3_ROTL64(t, 1);
+	    ctx.s[j] = t;
             t = bc[0];
         }
 
         /* Chi */
         for(j = 0; j < 25; j += 5) {
-            for(i = 0; i < 5; i++)
-                bc[i] = ctx.s[j + i];
-            for(i = 0; i < 5; i++)
-                ctx.s[j + i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
+            for(n = 0; n < 5; n++)
+                bc[n] = ctx.s[j + n];
+            for(n = 0; n < 5; n++)
+                ctx.s[j + n] ^= (~bc[(n + 1) % 5]) & bc[(n + 2) % 5];
         }
 
         /* Iota */
@@ -109,17 +114,18 @@ void sha3_Init512(void)
     ctx.capacityWords = 2 * 512 / (8 * sizeof(uint64_t));
 }
 
+__xdata uint32_t old_tail;
+__xdata size_t words;
+__xdata uint32_t tail;
+__xdata size_t ii;
+__xdata uint64_t t;
+__xdata uint8_t *buf;
+
 void sha3_Update(void *bufIn, size_t len)
 {
     /* 0...7 -- how much is needed to have a word */
-    __xdata static uint32_t old_tail = (8 - ctx.byteIndex) & 7;
-
-    __xdata static size_t words;
-    __xdata static uint32_t tail;
-    __xdata static size_t i;
-    __xdata static uint64_t t;
-
-    __xdata uint8_t *buf = bufIn;
+    old_tail = (8 - ctx.byteIndex) & 7;
+    buf = bufIn;
 
     SHA3_TRACE_BUF("called to update with:", buf, len);
 
@@ -165,7 +171,7 @@ void sha3_Update(void *bufIn, size_t len)
 
     SHA3_TRACE("have %d full words to process", (unsigned)words);
 
-    for(i = 0; i < words; i++, buf += sizeof(uint64_t)) {
+    for(ii = 0; ii < words; ii++, buf += sizeof(uint64_t)) {
         t = (uint64_t) (buf[0]) |
                 ((uint64_t) (buf[1]) << 8 * 1) |
                 ((uint64_t) (buf[2]) << 8 * 2) |
@@ -201,8 +207,13 @@ void sha3_Update(void *bufIn, size_t len)
  * The padding block is 0x01 || 0x00* || 0x80. First 0x01 and last 0x80 
  * bytes are always present, but they can be the same byte.
  */
+__xdata uint32_t t1;
+__xdata uint32_t t2;
+__xdata uint8_t word;
+
 void const *sha3_Finalize(void)
 {
+  
     SHA3_TRACE("called with %d bytes in the buffer", ctx.byteIndex);
 
     /* Append 2-bit suffix 01, per SHA-3 spec. Instead of 1 for padding we
@@ -232,18 +243,17 @@ void const *sha3_Finalize(void)
      * __BYTE_ORDER__!=__ORDER_LITTLE_ENDIAN__ ... the conversion below ...
      * #endif */
     {
-        static uint32_t i;
-        for(i = 0; i < SHA3_KECCAK_SPONGE_WORDS; i++) {
-            const __xdata uint32_t t1 = (uint32_t) ctx.s[i];
-            const __xdata uint32_t t2 = (uint32_t) ((ctx.s[i] >> 16) >> 16);
-            ctx.sb[i * 8 + 0] = (uint8_t) (t1);
-            ctx.sb[i * 8 + 1] = (uint8_t) (t1 >> 8);
-            ctx.sb[i * 8 + 2] = (uint8_t) (t1 >> 16);
-            ctx.sb[i * 8 + 3] = (uint8_t) (t1 >> 24);
-            ctx.sb[i * 8 + 4] = (uint8_t) (t2);
-            ctx.sb[i * 8 + 5] = (uint8_t) (t2 >> 8);
-            ctx.sb[i * 8 + 6] = (uint8_t) (t2 >> 16);
-            ctx.sb[i * 8 + 7] = (uint8_t) (t2 >> 24);
+        for(word = 0; word < SHA3_KECCAK_SPONGE_WORDS; word++) {
+            t1 = (uint32_t) ctx.s[word];
+            t2 = (uint32_t) ((ctx.s[word] >> 16) >> 16);
+            ctx.sb[word * 8 + 0] = (uint8_t) (t1);
+            ctx.sb[word * 8 + 1] = (uint8_t) (t1 >> 8);
+            ctx.sb[word * 8 + 2] = (uint8_t) (t1 >> 16);
+            ctx.sb[word * 8 + 3] = (uint8_t) (t1 >> 24);
+            ctx.sb[word * 8 + 4] = (uint8_t) (t2);
+            ctx.sb[word * 8 + 5] = (uint8_t) (t2 >> 8);
+            ctx.sb[word * 8 + 6] = (uint8_t) (t2 >> 16);
+            ctx.sb[word * 8 + 7] = (uint8_t) (t2 >> 24);
         }
     }
 
