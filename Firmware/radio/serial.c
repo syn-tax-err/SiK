@@ -211,7 +211,6 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					sha3_Init256();
 					while (BUF_NOT_EMPTY(rx)) {
 						eeprom_data[0]=serial_read();
-						printfl(" %x",eeprom_data[0]);
 						sha3_Update(eeprom_data,1);
 					}
 					sha3_Finalize();
