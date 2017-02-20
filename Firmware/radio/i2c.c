@@ -141,83 +141,6 @@ unsigned char i2c_tx(unsigned char d)
   return x;
 }
 
-char eeprom_write_byte(unsigned short address, unsigned char value)
-{
-  i2c_start();
-  if (i2c_tx(0xa0+((address>>7)&0xe))) return -1;
-  if (i2c_tx(address&0xff)) return -1;
-  if (i2c_tx(value)) return -1;
-  i2c_stop();
-  return 0;
-}
-
-char eeprom_write_page(unsigned short address)
-{
-  // Slow down I2C bus when writing, as otherwise it doesn't work
-  __xdata unsigned short old_i2c_delay=param_get(PARAM_I2CDELAY);
-  param_set(PARAM_I2CDELAY,5000);
-  
-  i2c_start();
-
-  // Due to slowness, show pretty lights while writing
-  LED_RADIO = LED_ON;
-  LED_ACTIVITY = LED_ON;
-  
-  if (i2c_tx(0xa0+((address>>7)&0xe))) goto fail;
-  if (i2c_tx(address&0xff)) goto fail;
-  for(char i=0;i<16;i++) {
-    if (i2c_tx(eeprom_data[i])) goto fail;
-    printfl(" %x",eeprom_data[i]);
-
-    if (i&1) {
-      LED_RADIO = LED_ON;
-      LED_ACTIVITY = LED_OFF;
-    } else {
-      LED_RADIO = LED_OFF;
-      LED_ACTIVITY = LED_ON;
-    }
-    
-  }
-  printfl("\r\n");
-  i2c_stop();
-  param_set(PARAM_I2CDELAY,old_i2c_delay);
-  LED_RADIO = LED_ON;
-  LED_ACTIVITY = LED_OFF;
-
-  return 0;
-
- fail:
-    param_set(PARAM_I2CDELAY,old_i2c_delay);
-    LED_RADIO = LED_ON;
-    LED_ACTIVITY = LED_OFF;
-    return -1;
-}
-
-void eeprom_writeprotect(void)
-{
-  pins_user_set_io(5,PIN_INPUT);
-  pins_user_set_value(5,1);
-}
-
-void eeprom_writeenable(void)
-{
-  pins_user_set_io(5,PIN_OUTPUT);
-  pins_user_set_value(5,0);
-}
-
-void eeprom_poweron(void)
-{
-  pins_user_set_io(2,PIN_OUTPUT);
-  pins_user_set_value(2,1);
-}
-
-void eeprom_poweroff(void)
-{
-  pins_user_set_io(2,PIN_OUTPUT);
-  pins_user_set_value(2,0);
-}
-
-
 char eeprom_read_byte(unsigned short address, char *byte)
 {  
   // Setup for a write, then abort it, to set memory pointer
@@ -248,6 +171,87 @@ char eeprom_read_page(unsigned short address)
   i2c_stop();
   
   return 0;
+}
+
+char eeprom_write_byte(unsigned short address, unsigned char value)
+{
+  i2c_start();
+  if (i2c_tx(0xa0+((address>>7)&0xe))) return -1;
+  if (i2c_tx(address&0xff)) return -1;
+  if (i2c_tx(value)) return -1;
+  i2c_stop();
+  return 0;
+}
+
+char eeprom_write_page(unsigned short address)
+{
+  i2c_start();
+
+  // Due to slowness, show pretty lights while writing
+  LED_RADIO = LED_ON;
+  LED_ACTIVITY = LED_ON;
+  
+  if (i2c_tx(0xa0+((address>>7)&0xe))) goto fail;
+  if (i2c_tx(address&0xff)) goto fail;
+  for(char i=0;i<16;i++) {
+    if (i2c_tx(eeprom_data[i])) goto fail;
+    printfl(" %x",eeprom_data[i]);
+
+    if (i&1) {
+      LED_RADIO = LED_ON;
+      LED_ACTIVITY = LED_OFF;
+    } else {
+      LED_RADIO = LED_OFF;
+      LED_ACTIVITY = LED_ON;
+    }
+    
+  }
+  i2c_stop();
+  LED_RADIO = LED_ON;
+  LED_ACTIVITY = LED_ON;
+  
+  // Now wait until the EEPROM has finished writing.
+  // This is most easily done by trying to read a byte from the EEPROM.
+  // This will fail, until such time as the writing has completed.
+
+  {
+    unsigned char byte;
+    while (eeprom_read_byte(0x0,&byte)) i2c_delay();
+  }
+
+  printfl("\r\n");
+  LED_ACTIVITY = LED_OFF;
+  
+  return 0;
+
+ fail:
+    LED_RADIO = LED_ON;
+    LED_ACTIVITY = LED_OFF;
+    return -1;
+}
+
+void eeprom_writeprotect(void)
+{
+  pins_user_set_io(5,PIN_INPUT);
+  pins_user_set_value(5,1);
+}
+
+void eeprom_writeenable(void)
+{
+  pins_user_set_io(5,PIN_OUTPUT);
+  pins_user_set_value(5,0);
+}
+
+void eeprom_poweron(void)
+{
+  pins_user_set_io(2,PIN_OUTPUT);
+  pins_user_set_value(2,1);
+}
+
+void eeprom_poweroff(void)
+{
+  pins_user_set_io(2,PIN_OUTPUT);
+  pins_user_set_value(2,0);
 }
 
 #else
