@@ -70,6 +70,7 @@ struct sha3_context {
         (((x) << (y)) | ((x) >> ((sizeof(uint64_t)*8) - (y))))
 #endif
 
+extern __xdata struct sha3_context ctx;
 
 /* *************************** Public Inteface ************************ */
 

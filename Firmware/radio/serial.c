@@ -37,6 +37,7 @@
 #include "serial.h"
 #include "packet.h"
 #include "i2c.h"
+#include "sha3.h"
 
 // Serial rx/tx buffers.
 //
@@ -202,6 +203,27 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				if (eeprom_address>=0x800) eeprom_address-=0x800;
 				printfl("EPRADDR=$%x\r\n",eeprom_address);
 				break;
+			case 'h':
+				// Test out SHA3 code
+				{
+					char i;
+					printfl("\r\nSHA3: ");
+					sha3_Init256();
+					while (BUF_NOT_EMPTY(rx)) {
+						eeprom_data[0]=serial_read();
+						printfl(" %x",eeprom_data[0]);
+						sha3_Update(eeprom_data,1);
+					}
+					sha3_Finalize();
+					for(i=0;i<32;i++)
+						if (!ctx.sb[i]) printfl("00");
+						else if (ctx.sb[i]<0x10)
+							printfl("0%x",ctx.sb[i]);
+						else
+							printfl("%x",ctx.sb[i]);
+					printfl("\r\n");
+				}
+				break;
 			case 'w':
 				// Write a page of data to EEPROM.
 				// We copy the first 16 bytes from the serial buffer
@@ -261,6 +283,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				flash_report_summary();
 			} else if ((c=='0') && last_was_bang ) {
 				// Empty packet buffer
+				last_was_bang=0;
 				rx_insert=0; rx_remove=0;
 			} else if ((c=='Z') && last_was_bang ) {
 				// Trigger a reset of radio by software (like ATZ)
@@ -269,10 +292,12 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
        	                         ;
 			} else if ((c=='R') && last_was_bang ) {
 				// Reset radio to default settings (like AT&F)
+				last_was_bang=0;
 				param_default();
 			} else if ((c=='V') && last_was_bang ) {
 				// Provide version info, to allow quick detection of CSMA
 				// firmware
+				last_was_bang=0;
 				putchar_r('1');
 			} else if ((c=='.') && last_was_bang ) {
 				last_was_bang=0;
