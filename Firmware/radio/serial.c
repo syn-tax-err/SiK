@@ -33,6 +33,10 @@
 /// parser integration.
 ///
 
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
 #include "flash_layout.h"
 #include "serial.h"
 #include "packet.h"
@@ -118,7 +122,6 @@ uint8_t hex_decode(uint8_t c)
 __xdata unsigned char count;
 __xdata char i;
 __xdata short eeprom_address = 0;
-
 
 void
 serial_interrupt(void) __interrupt(INTERRUPT_UART0)
@@ -220,7 +223,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 							printfl("0%x",ctx.sb[i]);
 						else
 							printfl("%x",ctx.sb[i]);
-					printfl("\r\n");
+					printfl("\r\n");					
 				}
 				break;
 			case 'w':
