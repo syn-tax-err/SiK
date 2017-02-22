@@ -218,11 +218,11 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					}
 					sha3_Finalize();
 					for(i=0;i<32;i++)
-						if (!ctx.sb[i]) printfl("00");
-						else if (ctx.sb[i]<0x10)
-							printfl("0%x",ctx.sb[i]);
+						if (!ctx.s[i>>3][i&7]) printfl("00");
+						else if (ctx.s[i>>3][i&7]<0x10)
+							printfl("0%x",ctx.s[i>>3][i&7]);
 						else
-							printfl("%x",ctx.sb[i]);
+							printfl("%x",ctx.s[i>>3][i&7]);
 					printfl("\r\n");					
 				}
 				break;
