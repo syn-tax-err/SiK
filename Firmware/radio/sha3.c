@@ -54,7 +54,7 @@ static const __code uint8_t keccakf_piln[24] = {
 
 __xdata struct sha3_context ctx;
 
-#if 0
+#if 1
 __xdata unsigned int report_counter=0;
 void sha3_report_(uint8_t v[8],int line)
 {
@@ -204,6 +204,11 @@ void sha3_Update(void *bufIn, size_t len)
     while (len--) {
       ctx.saved[ctx.byteIndex++] = *(buf++);
       if (ctx.byteIndex==8) {
+	fprintf(stdout,
+		"Ingesting word %02x %02x %02x %02x %02x %02x %02x %02x\n",
+	       ctx.saved[0],ctx.saved[1],ctx.saved[2],ctx.saved[3],
+	       ctx.saved[4],ctx.saved[5],ctx.saved[6],ctx.saved[7]);
+	
 	// Save complete word, and run keccakf()
 	for(b=0;b<8;b++) ctx.s[ctx.wordIndex][b] ^= ctx.saved[b];
         ctx.byteIndex = 0;
@@ -237,9 +242,11 @@ void sha3_Finalize(void)
      * Overall, we feed 0, then 1, and finally 1 to start padding. Without
      * M || 01, we would simply use 1 to start padding. */
 
+    for(b=0;b<8;b++) ctx.s[ctx.wordIndex][b]^=ctx.saved[b];
+
 #ifndef SHA3_USE_KECCAK
     /* SHA3 version */
-    ctx.s[ctx.wordIndex][ctx.byteIndex] ^= (ctx.saved[ctx.byteIndex] ^ 0x06);
+    ctx.s[ctx.wordIndex][ctx.byteIndex] ^= (ctx.saved[ctx.byteIndex] ^ 0x06);    
 #else
     /* For testing the "pure" Keccak version */
     ctx.s[ctx.wordIndex][ctx.byteIndex] ^= ctx.saved[7] ^ 1; 
