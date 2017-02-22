@@ -4,14 +4,15 @@
 #include "golay.h"
 #include "crc.h"
 #include "pins_user.h"
+#include "sha3.h"
 
 __xdata unsigned char eeprom_data[16];
 
-#if PIN_MAX>0
-
-unsigned short delay;
 unsigned char k;
+unsigned short delay;
 unsigned short i2c_delay_counter;
+
+#if PIN_MAX>0
 
 void i2c_delay(void)
 {
@@ -295,20 +296,29 @@ char eeprom_write_page(unsigned short address)
 void eeprom_load_parameters(void)
 {
   eeprom_poweron();
-  
-  // Read eeprom page from 0x7f0
+
+  // Read from $7C0-$7EF and calculate sha3 sum
+  sha3_Init256();
+
+  // (resuing i2c delay variable while out of scope)
+  for(delay=0x7c0;delay<0x7F0;delay+=0x10) {
+    eeprom_read_page(delay);
+    sha3_Update(eeprom_data,0x10);
+  }
+  // Compare with sum stored at $7F0
   if (eeprom_read_page(0x7f0)) {
     printfl("NO EEPROM\r\n");
-
+  
     // No eeprom, so just use the normal saved parameters.
 
     eeprom_poweroff();    
     return;
   }
 
-  // Read EEPROM data, so do something with it.
-  // But first, check if it is valid.
-  if ((eeprom_data[0xe]!='M')||(eeprom_data[0xf]!='E')) {
+  // Check SHA3 sum (we use only 128 bit prefix of the hash)
+  for(k=0;k<0x10;k++)
+    if (eeprom_data[k]!=ctx.s[k>>3][k&7]) {
+  
     printfl("INVALID EEPROM DATA\r\n");
 
     // If we have no valid data, then we need to make sure we don't transmit
@@ -318,14 +328,19 @@ void eeprom_load_parameters(void)
     eeprom_poweroff();
     return;
   }
-
-  // Have valid EEPROM data
+  
+  // Have valid EEPROM data.
+  // Reload $7E0-$7EF, and pull out primary parameters from there
+  eeprom_read_page(0x7e0);
 
   param_set(PARAM_TXPOWER,(eeprom_data[0]<<8)||eeprom_data[1]);
   param_set(PARAM_AIR_SPEED,(eeprom_data[2]<<8)||eeprom_data[3]);
   param_set(PARAM_FREQ,(eeprom_data[4]<<8)||eeprom_data[5]);
-  
-  printfl("EEPROM LOADED\r\n");
+
+  // Print success message, with two-character representative country
+  // code. (LBARD will read a longer country/region descriptor for
+  // display).
+  printfl("EEPROM VALID: %c%c\r\n",eeprom_data[0xe],eeprom_data[0xf]);
 
   eeprom_poweroff();
   return;
