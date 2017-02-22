@@ -203,12 +203,7 @@ void sha3_Update(void *bufIn, size_t len)
     // 8 bytes received.
     while (len--) {
       ctx.saved[ctx.byteIndex++] = *(buf++);
-      if (ctx.byteIndex==8) {
-	fprintf(stdout,
-		"Ingesting word %02x %02x %02x %02x %02x %02x %02x %02x\n",
-	       ctx.saved[0],ctx.saved[1],ctx.saved[2],ctx.saved[3],
-	       ctx.saved[4],ctx.saved[5],ctx.saved[6],ctx.saved[7]);
-	
+      if (ctx.byteIndex==8) {	
 	// Save complete word, and run keccakf()
 	for(b=0;b<8;b++) ctx.s[ctx.wordIndex][b] ^= ctx.saved[b];
         ctx.byteIndex = 0;
