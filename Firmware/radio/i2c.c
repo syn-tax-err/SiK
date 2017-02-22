@@ -39,24 +39,24 @@ void i2c_clock_low(void)
 
 void i2c_data_high(void)
 {
-  pins_user_set_io(6,PIN_INPUT);
-  pins_user_set_value(6,1);
+  pins_user_set_io(0,PIN_INPUT);
+  pins_user_set_value(0,1);
 }
 
 void i2c_data_low(void)
 {
-  pins_user_set_io(6,PIN_OUTPUT);
-  pins_user_set_value(6,0);
+  pins_user_set_io(0,PIN_OUTPUT);
+  pins_user_set_value(0,0);
 }
 
 unsigned char i2c_clock_value(void)
 {
-  if (pins_user_get_adc(3)) return 1; else return 0;
+  if (pins_user_get_adc(1)) return 1; else return 0;
 }
 
 unsigned char i2c_data_value(void)
 {
-  if (pins_user_get_adc(4)) return 1; else return 0;
+  if (pins_user_get_adc(0)) return 1; else return 0;
 }
 
 
