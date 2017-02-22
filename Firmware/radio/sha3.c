@@ -54,7 +54,7 @@ static const __code uint8_t keccakf_piln[24] = {
 
 __xdata struct sha3_context ctx;
 
-#if 1
+#if 0
 __xdata unsigned int report_counter=0;
 void sha3_report_(uint8_t v[8],int line)
 {
