@@ -289,6 +289,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				rx_insert=0; rx_remove=0;
 			} else if ((c=='Z') && last_was_bang ) {
 				// Trigger a reset of radio by software (like ATZ)
+				last_was_bang=0;
 				RSTSRC |= (1 << 4);
 	                        for (;;)
        	                         ;
