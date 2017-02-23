@@ -297,6 +297,8 @@ void eeprom_load_parameters(void)
 {
   eeprom_poweron();
 
+  printfl("READING EEPROM\r\n");
+  
   // Read from $7C0-$7EF and calculate sha3 sum
   sha3_Init256();
 
