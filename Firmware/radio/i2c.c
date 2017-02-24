@@ -297,7 +297,8 @@ void eeprom_load_parameters(void)
 {
   eeprom_poweron();
 
-  printfl("READING EEPROM\r\n");
+  puts_r("READING EEPROM\r\n");
+  // putchar_r('1');
   
   // Read from $7C0-$7EF and calculate sha3 sum
   sha3_Init256();
@@ -309,8 +310,8 @@ void eeprom_load_parameters(void)
   }
   // Compare with sum stored at $7F0
   if (eeprom_read_page(0x7f0)) {
-    printfl("NO EEPROM\r\n");
-  
+    // puts_r("NO EEPROM\r\n");
+    // putchar_r('2');
     // No eeprom, so just use the normal saved parameters.
 
     eeprom_poweroff();    
@@ -320,16 +321,17 @@ void eeprom_load_parameters(void)
   // Check SHA3 sum (we use only 128 bit prefix of the hash)
   for(k=0;k<0x10;k++)
     if (eeprom_data[k]!=ctx.s[k>>3][k&7]) {
-  
-    printfl("INVALID EEPROM DATA\r\n");
-
-    // If we have no valid data, then we need to make sure we don't transmit
-    // illegally.  
-    param_set(PARAM_TXPOWER,0);
-
-    eeprom_poweroff();
-    return;
-  }
+      
+      // puts_r("INVALID EEPROM DATA\r\n");
+      // putchar_r('3');
+      
+      // If we have no valid data, then we need to make sure we don't transmit
+      // illegally.  
+      param_set(PARAM_TXPOWER,0);
+      
+      eeprom_poweroff();
+      return;
+    }
   
   // Have valid EEPROM data.
   // Reload $7E0-$7EF, and pull out primary parameters from there
@@ -342,7 +344,11 @@ void eeprom_load_parameters(void)
   // Print success message, with two-character representative country
   // code. (LBARD will read a longer country/region descriptor for
   // display).
-  printfl("EEPROM VALID: %c%c\r\n",eeprom_data[0xe],eeprom_data[0xf]);
+  // puts_r("EEPROM VALID:");
+  // putchar_r(eeprom_data[0xe]);
+  // putchar_r(eeprom_data[0xf]);
+  // puts_r("\r\n");
+  //  putchar_r('4');
 
   eeprom_poweroff();
   return;

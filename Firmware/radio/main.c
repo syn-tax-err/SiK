@@ -40,6 +40,7 @@
 #include "radio.h"
 #include "csma.h"
 #include "timer.h"
+#include "i2c.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Interrupt vector prototypes
@@ -133,6 +134,9 @@ main(void)
 	// Calculate hashes of flash memory now, so that we can respond quickly later
 	// when requested.
 	flash_calculate_hash();
+
+	// Load radio parameters from I2C EEPROM, if present.
+	// eeprom_load_parameters();
 	
 	csma_serial_loop();
 }

@@ -273,9 +273,6 @@ __critical {
 		}
 	}
 
-	// Then try to load radio parameters from the serial EEPROM
-	eeprom_load_parameters();
-	
 	// read and verify pin params
 #if PIN_MAX > 0
 	if(!read_params((__xdata uint8_t *)pin_values, PIN_FLASH_START+1, sizeof(pin_values)))
