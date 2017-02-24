@@ -277,7 +277,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			}
 #endif
 			} else if ((c=='D') && last_was_bang ) {
-				eeprom_load_parameters();
+				eeprom_param_request=true;
 				last_was_bang=0;
 			} else if ((c=='E') && last_was_bang ) {
 				// Dump EEPROM contents

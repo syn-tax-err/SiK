@@ -39,6 +39,7 @@
 /// with an 8-bit XOR checksum appended to the end of the flash range.
 ///
 
+#include <stdbool.h>
 #include "radio.h"
 #include "csma.h"
 #include "crc.h"

@@ -36,6 +36,7 @@
 ///
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include "radio.h"
 #include "csma.h"
 #include "timer.h"
@@ -47,6 +48,7 @@
 #include "at.h"
 #include "board.h"
 #include "pins_user.h"
+#include "i2c.h"
 
 #define USE_TICK_YIELD 1
 
@@ -296,6 +298,11 @@ csma_serial_loop(void)
 		// give the AT command processor a chance to handle a command
 		at_command();
 
+		if (eeprom_param_request) {
+			eeprom_param_request=false;
+			eeprom_load_parameters();			
+		}
+		
 		// set right receive channel
 		// PGS: Always the only channel we have for CSMA
 		radio_set_channel(0);

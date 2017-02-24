@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "board.h"
 #include "radio.h"
 #include "timer.h"
@@ -6,6 +7,7 @@
 #include "pins_user.h"
 #include "sha3.h"
 
+bool eeprom_param_request=false;
 __xdata unsigned char eeprom_data[16];
 
 unsigned char k;
@@ -295,35 +297,39 @@ char eeprom_write_page(unsigned short address)
 
 void eeprom_load_parameters(void)
 {
+  uint16_t a;
+  
+  printf("READING EEPROM");
+  
   eeprom_poweron();
-
-  puts_r("READING EEPROM\r\n");
-  // putchar_r('1');
   
   // Read from $7C0-$7EF and calculate sha3 sum
   sha3_Init256();
 
   // (resuing i2c delay variable while out of scope)
-  for(delay=0x7c0;delay<0x7F0;delay+=0x10) {
-    eeprom_read_page(delay);
+  for(a=0x7c0;a<0x7F0;a+=0x10) {
+    eeprom_read_page(a);
     sha3_Update(eeprom_data,0x10);
+    printf(".");
   }
+  printf("\r\n");
+
   // Compare with sum stored at $7F0
   if (eeprom_read_page(0x7f0)) {
-    // puts_r("NO EEPROM\r\n");
-    // putchar_r('2');
+    printf("NO EEPROM\r\n");
     // No eeprom, so just use the normal saved parameters.
 
     eeprom_poweroff();    
     return;
   }
 
+  sha3_Finalize();
+  
   // Check SHA3 sum (we use only 128 bit prefix of the hash)
-  for(k=0;k<0x10;k++)
+  for(k=0;k<0x10;k++) {
     if (eeprom_data[k]!=ctx.s[k>>3][k&7]) {
       
-      // puts_r("INVALID EEPROM DATA\r\n");
-      // putchar_r('3');
+      printf("INVALID EEPROM DATA\r\n");
       
       // If we have no valid data, then we need to make sure we don't transmit
       // illegally.  
@@ -332,6 +338,7 @@ void eeprom_load_parameters(void)
       eeprom_poweroff();
       return;
     }
+  }
   
   // Have valid EEPROM data.
   // Reload $7E0-$7EF, and pull out primary parameters from there
@@ -344,11 +351,7 @@ void eeprom_load_parameters(void)
   // Print success message, with two-character representative country
   // code. (LBARD will read a longer country/region descriptor for
   // display).
-  // puts_r("EEPROM VALID:");
-  // putchar_r(eeprom_data[0xe]);
-  // putchar_r(eeprom_data[0xf]);
-  // puts_r("\r\n");
-  //  putchar_r('4');
+  printf("EEPROM VALID: %c%c\r\n",eeprom_data[0xe],eeprom_data[0xf]);
 
   eeprom_poweroff();
   return;

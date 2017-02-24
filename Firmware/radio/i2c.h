@@ -19,4 +19,4 @@ char eeprom_write_page(unsigned short address);
 void eeprom_load_parameters(void);
 
 extern __xdata unsigned char eeprom_data[16];
-
+extern bool eeprom_param_request;
