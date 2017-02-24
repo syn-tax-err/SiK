@@ -154,6 +154,30 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				} else {
 					last_was_bang=1;
 				}
+			} else if ((c=='B') && last_was_bang ) {
+
+				// Drop to boot loader if !Cup!B is typed
+				
+				if (BUF_EMPTY(rx)||(serial_read()!='u')) c=1;
+				if (BUF_EMPTY(rx)||(serial_read()!='p')) c=1;
+				if (BUF_NOT_EMPTY(rx)) c=1;
+				
+				last_was_bang=0;
+
+				if (c==0) {
+					// Erase Flash signature forcing it into reprogram mode next reset
+					FLKEY = 0xa5;
+					FLKEY = 0xf1;
+					PSCTL = 0x03;	// set PSWE and PSEE
+					*(uint8_t __xdata *)FLASH_SIGNATURE_BYTES = 0xff;	// do the page erase
+					PSCTL = 0x00;	// disable PSWE/PSEE
+					
+					// Reset the device using sofware reset
+					RSTSRC |= 0x10;
+					
+					for (;;)
+						;
+				}
 			} else if ((c=='C') && last_was_bang ) {
 				// clear TX buffer
 				last_was_bang=0;
@@ -251,7 +275,10 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				eeprom_writeprotect();
 				break;
 			}
-#endif				
+#endif
+			} else if ((c=='D') && last_was_bang ) {
+				eeprom_load_parameters();
+				last_was_bang=0;
 			} else if ((c=='E') && last_was_bang ) {
 				// Dump EEPROM contents
 				{
@@ -647,8 +674,7 @@ serial_read_space_bytes(void)
 }
 
 
-void
-putchar_r(char c) __reentrant
+void putchar_r(char c) __reentrant
 {
 	if (c == '\n')
 		_serial_write('\r');
