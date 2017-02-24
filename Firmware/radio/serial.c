@@ -157,14 +157,14 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			} else if ((c=='B') && last_was_bang ) {
 
 				// Drop to boot loader if !Cup!B is typed
-				
+
 				if (BUF_EMPTY(rx)||(serial_read()!='u')) c=1;
 				if (BUF_EMPTY(rx)||(serial_read()!='p')) c=1;
 				if (BUF_NOT_EMPTY(rx)) c=1;
 				
 				last_was_bang=0;
 
-				if (c==0) {
+				if (c=='B') {
 					// Erase Flash signature forcing it into reprogram mode next reset
 					FLKEY = 0xa5;
 					FLKEY = 0xf1;
