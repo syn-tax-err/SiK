@@ -147,33 +147,52 @@ char eeprom_read_byte(unsigned short address, char *byte)
 {  
   // Setup for a write, then abort it, to set memory pointer
   i2c_start();
-  if (i2c_tx(0xa0+((address>>7)&0xe))) { *byte=1; i2c_stop(); return -1; }
-  if (i2c_tx(address&0xff)) { *byte=2; i2c_stop(); return -1; }
+  if (i2c_tx(0xa0+((address>>7)&0xe))) { i2c_stop(); return 1; }
+  if (i2c_tx(address&0xff)) { i2c_stop(); return 2; }
 
   i2c_start();
   
-  if (i2c_tx(0xa1+((address>>7)&0xe))) { *byte=3; i2c_stop(); return -1; }
+  if (i2c_tx(0xa1+((address>>7)&0xe))) { i2c_stop(); return 3; }
 
   *byte=i2c_rx(1);
   i2c_stop();
   return 0;
 }
 
-char eeprom_read_page(unsigned short address)
+char _eeprom_read_page(unsigned short address)
 {
   i2c_start();
-  if (i2c_tx(0xa0+((address>>7)&0xe))) { i2c_stop(); return -1; }
-  if (i2c_tx(address&0xff)) { i2c_stop(); return -1; }
+  if (i2c_tx(0xa0+((address>>7)&0xe))) { i2c_stop(); return 4; }
+  if (i2c_tx(address&0xff)) { i2c_stop(); return 5; }
 
   i2c_start();
   
-  if (i2c_tx(0xa1+((address>>7)&0xe))) { i2c_stop(); return -1; }
+  if (i2c_tx(0xa1+((address>>7)&0xe))) { i2c_stop(); return 6; }
 
   for(unsigned char i=0;i<16;i++) eeprom_data[i]=i2c_rx(1);
   i2c_stop();
   
   return 0;
 }
+
+char eeprom_read_page(unsigned short address)
+{
+  // Try to deal with transient read-errors
+  if (!_eeprom_read_page(address)) return 0;
+  i2c_delay();
+  i2c_delay();
+  i2c_delay();
+  if (!_eeprom_read_page(address)) return 0;
+  i2c_delay();
+  i2c_delay();
+  i2c_delay();
+  if (!_eeprom_read_page(address)) return 0;
+  i2c_delay();
+  i2c_delay();
+  i2c_delay();
+  return _eeprom_read_page(address);
+}
+
 
 char eeprom_write_byte(unsigned short address, unsigned char value)
 {
