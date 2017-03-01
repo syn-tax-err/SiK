@@ -262,12 +262,37 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				{
 					// Copy bytes from TX buffer
 					char i;
-					for(i=0;i<16;i++)
-						eeprom_data[i]=serial_read();
+					for(i=0;i<16;i++) {
+						if (BUF_NOT_EMPTY(rx))
+							eeprom_data[i]=serial_read();
+						else eeprom_data[i]=0xbd;
+					}
 					if (eeprom_write_page(eeprom_address))
 						printfl("WRITE ERROR\r\n");
 					else
 						printf("EEPROM WRITTEN\r\n");
+					
+				}
+				eeprom_poweroff();
+				// Re-enable write-protect
+				eeprom_writeprotect();
+				break;
+			case 'j':
+				// Write a byte of data to EEPROM.
+				
+				eeprom_poweron();
+				printfl("\r\n");
+				{
+					// Copy bytes from TX buffer
+					char i;
+					eeprom_data[0]=serial_read();
+					if (eeprom_write_byte(eeprom_address,eeprom_data[0]))
+						printfl("WRITE ERROR\r\n");
+					else {
+						printfl("EEPROM WRITTEN %x -> $%x\r\n",
+							eeprom_data[0],eeprom_address);
+						eeprom_address++;
+					}
 					
 				}
 				eeprom_poweroff();
