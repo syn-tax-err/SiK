@@ -269,8 +269,15 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					}
 					if (eeprom_write_page(eeprom_address))
 						printfl("WRITE ERROR\r\n");
-					else
-						printf("EEPROM WRITTEN\r\n");
+					else {
+						printfl("EEPROM WRITTEN @ $%x\r\nREAD BACK",
+							eeprom_address);
+						for(i=0;i<16;i++) eeprom_data[i]=0xEE;
+						eeprom_read_page(eeprom_address);
+						for(i=0;i<16;i++)
+							printfl(" %x",eeprom_data[i]);
+						printfl("\r\n");
+					}
 					
 				}
 				eeprom_poweroff();

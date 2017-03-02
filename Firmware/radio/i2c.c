@@ -79,11 +79,12 @@ void i2c_start(void)
   i2c_data_low();  i2c_delay();
 }
 
-__xdata char x,d,timeout;
+__xdata char x,d,timeout,read_error;
 
 unsigned char i2c_rx(char ack)
 {
   x=0; d=0; timeout=255;
+  read_error=0;
   
   i2c_data_high();
   i2c_delay();
@@ -96,7 +97,10 @@ unsigned char i2c_rx(char ack)
 
     // Wait for any clock stretching
     while (!i2c_clock_value()) {
-      timeout--; if (!timeout) return 0x54;
+      timeout--; if (!timeout) {
+	read_error=0x54;
+	return 0x54;
+      }
       i2c_delay();
     }
 
@@ -162,14 +166,23 @@ char eeprom_read_byte(unsigned short address, char *byte)
 char _eeprom_read_page(unsigned short address)
 {
   i2c_start();
-  if (i2c_tx(0xa0+((address>>7)&0xe))) { i2c_stop(); return 4; }
+  if (i2c_tx(0xa0|((address>>7)&0xe))) { i2c_stop(); return 4; }
   if (i2c_tx(address&0xff)) { i2c_stop(); return 5; }
-
+  
   i2c_start();
   
   if (i2c_tx(0xa1+((address>>7)&0xe))) { i2c_stop(); return 6; }
+  
+  for(unsigned char i=0;i<16;i++) eeprom_data[i]=0xfd;
+  
+  for(unsigned char i=0;i<16;i++) {
+    eeprom_data[i]=i2c_rx(1);
+    if (read_error) {
+      i2c_stop();
+      return read_error;
+    }
+  }
 
-  for(unsigned char i=0;i<16;i++) eeprom_data[i]=i2c_rx(1);
   i2c_stop();
   
   return 0;
@@ -196,16 +209,34 @@ char eeprom_read_page(unsigned short address)
 
 char eeprom_write_byte(unsigned short address, unsigned char value)
 {
+  uint8_t waiting=1;
+
   i2c_start();
-  if (i2c_tx(0xa0+((address>>7)&0xe))) return -1;
-  if (i2c_tx(address&0xff)) return -1;
-  if (i2c_tx(value)) return -1;
+  if (i2c_tx(0xa0+((address>>7)&0xe))) {  i2c_stop(); return -1; }
+  if (i2c_tx(address&0xff))  {  i2c_stop(); return -1; }
+  if (i2c_tx(value))  {  i2c_stop(); return -1; }
   i2c_stop();
+
+  // Now wait until the EEPROM has finished writing.
+  // This is most easily done by trying to WRITE a byte from the EEPROM.
+  // This will fail, until such time as the writing has completed.
+
+  while(waiting)
+  {
+    i2c_start();
+    if (!i2c_tx(0xa0)) // dummy write instruction
+      {
+	waiting=0;
+	i2c_stop();
+      }    
+  }
+  
   return 0;
 }
 
 char eeprom_write_page(unsigned short address)
 {
+  uint8_t waiting=1;
   i2c_start();
 
   // Due to slowness, show pretty lights while writing
@@ -232,11 +263,18 @@ char eeprom_write_page(unsigned short address)
   LED_ACTIVITY = LED_ON;
   
   // Now wait until the EEPROM has finished writing.
-  // This is most easily done by trying to read a byte from the EEPROM.
+  // This is most easily done by trying to WRITE a byte from the EEPROM.
   // This will fail, until such time as the writing has completed.
 
+  waiting=1;
+  while(waiting)
   {
-    while (eeprom_read_byte(0x0,&x)) i2c_delay();
+    i2c_start();
+    if (!i2c_tx(0xa0)) // dummy write instruction
+      {
+	waiting=0;
+	i2c_stop();
+      }    
   }
 
   printfl("\r\n");
@@ -245,9 +283,10 @@ char eeprom_write_page(unsigned short address)
   return 0;
 
  fail:
-    LED_RADIO = LED_ON;
-    LED_ACTIVITY = LED_OFF;
-    return -1;
+  i2c_stop();
+  LED_RADIO = LED_ON;
+  LED_ACTIVITY = LED_OFF;
+  return -1;
 }
 
 void eeprom_writeprotect(void)
@@ -270,6 +309,7 @@ void eeprom_poweron(void)
 
 void eeprom_poweroff(void)
 {
+  return;
   pins_user_set_io(2,PIN_OUTPUT);
   pins_user_set_value(2,0);
 }
