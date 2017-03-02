@@ -183,6 +183,9 @@ char _eeprom_read_page(unsigned short address)
     }
   }
 
+  // Terminate the sequential read
+  i2c_rx(0);
+  
   i2c_stop();
   
   return 0;
