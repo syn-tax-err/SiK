@@ -22,9 +22,12 @@ void i2c_delay(void)
   i2c_delay_counter = param_get(PARAM_I2CDELAY);
   
   // Will this be enough?
-  for(delay=0;delay!=i2c_delay_counter;delay++)
-    for(k=0;k!=0x0f;k++)
-      continue;
+  //  for(delay=0;delay!=i2c_delay_counter;delay++)
+  //  for(k=0;k!=0x0f;k++)
+  //  continue;
+
+  // actually, it turns out that just calling this function and reading
+  // the I2CDELAY parameter is sufficient delay.
     
 }
 
@@ -312,7 +315,6 @@ void eeprom_poweron(void)
 
 void eeprom_poweroff(void)
 {
-  return;
   pins_user_set_io(2,PIN_OUTPUT);
   pins_user_set_value(2,0);
 }
