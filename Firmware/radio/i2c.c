@@ -19,7 +19,7 @@ unsigned short i2c_delay_counter;
 void i2c_delay(void)
 {
   // 10 microsecond delay
-  i2c_delay_counter = param_get(PARAM_I2CDELAY);
+  // i2c_delay_counter = param_get(PARAM_I2CDELAY);
   
   // Will this be enough?
   //  for(delay=0;delay!=i2c_delay_counter;delay++)
