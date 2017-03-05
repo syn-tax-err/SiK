@@ -338,6 +338,33 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					
 					last_was_bang=0;
 				}
+			} else if ((c=='I') && last_was_bang ) {
+				// Dump EEPROM contents in compat format
+				{
+					count=0;
+					eeprom_poweron();
+					while(1)
+						{
+							putchar_r(5); putchar_r(16);
+							putchar_r(eeprom_address&0xff);
+							putchar_r(eeprom_address>>8);
+							i=eeprom_read_page(eeprom_address);
+							if (i) printfl("READ ERROR #%d",i);
+							else {
+								for(i=0;i<16;i++) putchar_r(eeprom_data[i]);
+							}
+							eeprom_address+=16;
+							if (eeprom_address>=0x800) eeprom_address=0;
+							
+							count+=16;
+							if (count==0x80) break;
+						}
+
+					eeprom_poweroff();
+					
+					last_was_bang=0;
+				}
+
 			} else if ((c=='F') && last_was_bang ) {
 				// Identify radio firmware by series of checksums of flash
 				last_was_bang=0;
