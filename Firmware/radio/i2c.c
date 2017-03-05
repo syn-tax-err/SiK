@@ -16,6 +16,7 @@ unsigned short i2c_delay_counter;
 
 #if PIN_MAX>0
 
+#if 0
 void i2c_delay(void)
 {
   // 10 microsecond delay
@@ -30,6 +31,9 @@ void i2c_delay(void)
   // the I2CDELAY parameter is sufficient delay.
     
 }
+#else
+#define i2c_delay()
+#endif
 
 void i2c_clock_high(void)
 {
