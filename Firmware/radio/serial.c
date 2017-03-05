@@ -202,16 +202,6 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				// (writing to EEPROM reasserts it automatically)
 				eeprom_writeenable();
 				break;
-			case 'f': i2c_clock_low(); i2c_delay();
-				  i2c_data_high(); i2c_delay();
-				  i2c_clock_high(); i2c_delay();
-				  i2c_clock_low(); i2c_delay();
-				  break;
-			case 'v': i2c_clock_low(); i2c_delay();
-				  i2c_data_low(); i2c_delay();
-				  i2c_clock_high(); i2c_delay();
-				  i2c_clock_low(); i2c_delay();
-				  break;
 			case 'b': case 'm': case 'n':
 			case 'g':
 				// Adjust where to read or write data in EEPROM
