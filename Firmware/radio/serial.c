@@ -351,7 +351,8 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 							i=eeprom_read_page(eeprom_address);
 							if (i) printfl("READ ERROR #%d",i);
 							else {
-								for(i=0;i<16;i++) putchar_r(eeprom_data[i]);
+								// Use _serial_write to avoid CRLF conversion
+								for(i=0;i<16;i++) _serial_write(eeprom_data[i]);
 							}
 							eeprom_address+=16;
 							if (eeprom_address>=0x800) eeprom_address=0;
