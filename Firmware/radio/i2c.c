@@ -415,15 +415,21 @@ void eeprom_load_parameters(void)
   if (eeprom_data[0xf]==0x1) {
     uint32_t v;
     param_set(PARAM_TXPOWER,eeprom_data[1]);
+    param_set(PARAM_DUTY_CYCLE,eeprom_data[0]);
     param_set(PARAM_AIR_SPEED,(eeprom_data[7]<<8)||eeprom_data[6]);
-    v=(eeprom_data[5]<<8)||eeprom_data[4];
-    v|=(eeprom_data[3]<<8)||eeprom_data[2];
+    v =((uint32_t)eeprom_data[5]<<24);
+    v|=(((uint32_t)eeprom_data[4])<<16);
+    v|=(((uint32_t)eeprom_data[3])<<8);
+    v|=(((uint32_t)eeprom_data[2])<<0);
     param_set(PARAM_FREQ,v);
     
     // Print success message, with two-character representative country
     // code. (LBARD will read a longer country/region descriptor for
     // display).
-    printf("EEPROM VALID: %c%c\r\n",eeprom_data[0xD],eeprom_data[0xE]);
+    printf("EEPROM VALID: %c%c, %lu Hz\r\n",
+	   eeprom_data[0xD],eeprom_data[0xE],
+	   (unsigned long)v,
+	   eeprom_data[5],eeprom_data[4],eeprom_data[3],eeprom_data[2]);
   } else {
     printf("EEPROM DATA FORMAT %x unknown\r\n",eeprom_data[0xf]);
   }
