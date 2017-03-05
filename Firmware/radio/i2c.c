@@ -419,7 +419,7 @@ void eeprom_load_parameters(void)
     // Print success message, with two-character representative country
     // code. (LBARD will read a longer country/region descriptor for
     // display).
-    printf("EEPROM VALID: %c%c\r\n",eeprom_data[0xe],eeprom_data[0xf]);
+    printf("EEPROM VALID: %c%c\r\n",eeprom_data[0xD],eeprom_data[0xE]);
   } else {
     printf("EEPROM DATA FORMAT %x unknown\r\n",eeprom_data[0xf]);
   }
