@@ -170,7 +170,7 @@ char eeprom_read_byte(unsigned short address, char *byte)
   return 0;
 }
 
-char _eeprom_read_page(unsigned short address)
+char eeprom_read_page(unsigned short address)
 {
   i2c_start();
   if (i2c_tx(0xa0|((address>>7)&0xe))) { i2c_stop(); return 4; }
@@ -197,25 +197,6 @@ char _eeprom_read_page(unsigned short address)
   
   return 0;
 }
-
-char eeprom_read_page(unsigned short address)
-{
-  // Try to deal with transient read-errors
-  if (!_eeprom_read_page(address)) return 0;
-  i2c_delay();
-  i2c_delay();
-  i2c_delay();
-  if (!_eeprom_read_page(address)) return 0;
-  i2c_delay();
-  i2c_delay();
-  i2c_delay();
-  if (!_eeprom_read_page(address)) return 0;
-  i2c_delay();
-  i2c_delay();
-  i2c_delay();
-  return _eeprom_read_page(address);
-}
-
 
 char eeprom_write_byte(unsigned short address, unsigned char value)
 {
