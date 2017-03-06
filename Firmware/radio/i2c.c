@@ -170,6 +170,7 @@ char eeprom_read_byte(unsigned short address, char *byte)
   return 0;
 }
 
+// Currently takes ~75ms
 char eeprom_read_page(unsigned short address)
 {
   i2c_start();
@@ -182,7 +183,7 @@ char eeprom_read_page(unsigned short address)
   
   for(unsigned char i=0;i<16;i++) eeprom_data[i]=0xfd;
   
-  for(unsigned char i=0;i<16;i++) {
+  for(unsigned char i=0;i<15;i++) {
     eeprom_data[i]=i2c_rx(1);
     if (read_error) {
       i2c_stop();
@@ -191,7 +192,11 @@ char eeprom_read_page(unsigned short address)
   }
 
   // Terminate the sequential read
-  i2c_rx(0);
+  eeprom_data[15]=i2c_rx(0);
+  if (read_error) {
+    i2c_stop();
+    return read_error;
+  }
   
   i2c_stop();
   
