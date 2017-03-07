@@ -98,7 +98,17 @@ unsigned char i2c_rx(char ack)
   i2c_delay();
 
   // Receive bits
-#if 0
+#if defined BOARD_rfd900p
+  // Optimised reading routine for RFD900p
+  
+  pins_user_set_io(1,PIN_OUTPUT); // clock to output
+  for(x=0;x<8;x++) {
+    d <<= 1;
+    P3 |= 0x08; // clock high
+    if (P3&0x10) d|=1;
+    P3 &= ~0x08; // clock low
+  }
+#else
   for(x=0;x<8;x++) {
     d <<= 1;
     i2c_clock_high();
@@ -117,16 +127,6 @@ unsigned char i2c_rx(char ack)
 
     i2c_clock_low();
     // i2c_delay();
-  }
-#else
-  // Optimised reading routine
-  
-  pins_user_set_io(1,PIN_OUTPUT); // clock to output
-  for(x=0;x<8;x++) {
-    d <<= 1;
-    pins_user_set_value(1,1); // clock high
-    if (i2c_data_value()) d|=1;
-    pins_user_set_value(1,0); // clock low
   }
 #endif
 
