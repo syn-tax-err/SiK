@@ -94,25 +94,38 @@ unsigned char i2c_rx(char ack)
   x=0; d=0; timeout=255;
   read_error=0;
   
-  i2c_data_high();
-  i2c_delay();
-
   // Receive bits
 #if defined BOARD_rfd900p
   // Optimised reading routine for RFD900p
+
+  // data = input, float high
+  SFRPAGE = CONFIG_PAGE; P3DRV   |= 0x10;
+  SFRPAGE = LEGACY_PAGE; P3MDOUT &= ~0x10;
+  P3|=0x10;
   
-  pins_user_set_io(1,PIN_OUTPUT); // clock to output
   for(x=0;x<8;x++) {
     d <<= 1;
     P3 |= 0x08; // clock high
     if (P3&0x10) d|=1;
     P3 &= ~0x08; // clock low
   }
+
+  // Send [n]ack
+  P3MDOUT|=0x10;
+  if (ack) P3&=~0x10;
+  else P3|=0x10;
+
+  // Finish ACK/NACK
+  P3 |= 0x08; // clock high
+  for(x=0;x<1;x++) continue;
+  P3 &= ~0x08; // clock low
+  
 #else
+  i2c_data_high();
+
   for(x=0;x<8;x++) {
     d <<= 1;
     i2c_clock_high();
-    //    i2c_delay();
 
     // Wait for any clock stretching
     while (!i2c_clock_value()) {
@@ -120,25 +133,22 @@ unsigned char i2c_rx(char ack)
 	read_error=0x54;
 	return 0x54;
       }
-      i2c_delay();
     }
 
     if (i2c_data_value()) d|=1;
 
     i2c_clock_low();
-    // i2c_delay();
   }
-#endif
-
+  
   // Send [n]ack
   if (ack) i2c_data_low(); else i2c_data_high();
-  i2c_delay();
   
-  i2c_clock_high(); i2c_delay();
+  i2c_clock_high(); 
 
   // Finish ACK/NACK
-  i2c_clock_low(); i2c_delay();
-  //  i2c_data_high(); i2c_delay();
+  i2c_clock_low(); 
+
+#endif
   
   return d;
 }
