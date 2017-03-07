@@ -309,10 +309,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					while(1)
 						{
 							printfl("EPR:%x : ",eeprom_address);
-							if (!count)
-								i=eeprom_read_page(eeprom_address);
-							else
-								i=eeprom_read_next_page(eeprom_address);
+							i=eeprom_read_page(eeprom_address);
 							if (i) printfl("READ ERROR #%d",i);
 							else {
 								for(i=0;i<16;i++)
