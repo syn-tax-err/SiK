@@ -281,7 +281,6 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				printfl("\r\n");
 				{
 					// Copy bytes from TX buffer
-					char i;
 					eeprom_data[0]=serial_read();
 					if (eeprom_write_byte(eeprom_address,eeprom_data[0]))
 						printfl("WRITE ERROR\r\n");
@@ -310,7 +309,10 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					while(1)
 						{
 							printfl("EPR:%x : ",eeprom_address);
-							i=eeprom_read_page(eeprom_address);
+							if (!count)
+								i=eeprom_read_page(eeprom_address);
+							else
+								i=eeprom_read_next_page(eeprom_address);
 							if (i) printfl("READ ERROR #%d",i);
 							else {
 								for(i=0;i<16;i++)

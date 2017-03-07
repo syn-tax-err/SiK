@@ -6,6 +6,7 @@
 #include "crc.h"
 #include "pins_user.h"
 #include "sha3.h"
+#include "i2c.h"
 
 bool eeprom_param_request=false;
 __xdata unsigned char eeprom_data[16];
@@ -86,7 +87,7 @@ void i2c_start(void)
   i2c_data_low();  i2c_delay();
 }
 
-__xdata char x,d,timeout,read_error;
+char x,d,timeout,read_error;
 
 unsigned char i2c_rx(char ack)
 {
@@ -97,10 +98,11 @@ unsigned char i2c_rx(char ack)
   i2c_delay();
 
   // Receive bits
+#if 0
   for(x=0;x<8;x++) {
     d <<= 1;
     i2c_clock_high();
-    i2c_delay();
+    //    i2c_delay();
 
     // Wait for any clock stretching
     while (!i2c_clock_value()) {
@@ -113,8 +115,20 @@ unsigned char i2c_rx(char ack)
 
     if (i2c_data_value()) d|=1;
 
-    i2c_clock_low(); i2c_delay();
+    i2c_clock_low();
+    // i2c_delay();
   }
+#else
+  // Optimised reading routine
+  
+  pins_user_set_io(1,PIN_OUTPUT); // clock to output
+  for(x=0;x<8;x++) {
+    d <<= 1;
+    pins_user_set_value(1,1); // clock high
+    if (i2c_data_value()) d|=1;
+    pins_user_set_value(1,0); // clock low
+  }
+#endif
 
   // Send [n]ack
   if (ack) i2c_data_low(); else i2c_data_high();
@@ -178,10 +192,13 @@ char eeprom_read_page(unsigned short address)
   if (i2c_tx(address&0xff)) { i2c_stop(); return 5; }
   
   i2c_start();
+
+  return eeprom_read_next_page(address);
+}
   
+char eeprom_read_next_page(unsigned short address)
+{
   if (i2c_tx(0xa1+((address>>7)&0xe))) { i2c_stop(); return 6; }
-  
-  for(unsigned char i=0;i<16;i++) eeprom_data[i]=0xfd;
   
   for(unsigned char i=0;i<15;i++) {
     eeprom_data[i]=i2c_rx(1);

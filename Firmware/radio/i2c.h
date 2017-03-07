@@ -15,6 +15,7 @@ void eeprom_writeenable(void);
 char eeprom_write_byte(unsigned short address, unsigned char value);
 char eeprom_read_byte(unsigned short address, char *byte);
 char eeprom_read_page(unsigned short address);
+char eeprom_read_next_page(unsigned short address);
 char eeprom_write_page(unsigned short address);
 void eeprom_load_parameters(void);
 
