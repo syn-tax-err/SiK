@@ -155,6 +155,31 @@ unsigned char i2c_rx(char ack)
 
 unsigned char i2c_tx(unsigned char d)
 {
+
+#if defined board_rfd900p
+  P3 &= ~0x08; // clock low
+
+  for(x=8;x;x--) {
+    if (d&0x80) P3 |= 0x10; else P3 &= ~0x10;
+    d<<=1;
+    P3 |= 0x08; // clock high
+    for(readerror=0;readerror<2;readerror++) continue;
+    P3 &= ~0x08; // clock low
+  }
+
+  // data = input, float high
+  SFRPAGE = CONFIG_PAGE; P3DRV   |= 0x10;
+  SFRPAGE = LEGACY_PAGE; P3MDOUT &= ~0x10;
+  P3|=0x10;
+
+  P3 |= 0x08; // clock high
+
+  if (P3 & 0x10) x=1; else x=0;
+
+  P3 &= ~0x08; // clock low
+  
+      
+#else
   i2c_clock_low(); i2c_delay();
   
   for(x=8;x;x--) {
@@ -174,6 +199,7 @@ unsigned char i2c_tx(unsigned char d)
 
   // Close ACK clock pulse
   i2c_clock_low(); i2c_delay();
+#endif
   
   return x;
 }
