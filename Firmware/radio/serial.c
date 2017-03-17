@@ -191,30 +191,30 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 		        switch (c) {
 			case 'p': eeprom_poweron(); break;
 			case 'o': eeprom_poweroff(); break;
-			case 'a': i2c_start(); break;
-			case 'z': i2c_stop(); break; 
-			case 's': i2c_clock_high(); break;
+			case 's': // i2c_clock_high(); break;
+				// Drive line hard (for debugging)
+				pins_user_set_io(1,PIN_OUTPUT);
+				pins_user_set_value(1,1);
+				break;
 			case 'x': i2c_clock_low(); break;
-			case 'd': i2c_data_high(); break;
+			case 'd': // i2c_data_high(); break;
+				// Drive line hard (for debugging)
+				pins_user_set_io(0,PIN_OUTPUT);
+				pins_user_set_value(0,1);
+				break;
 			case 'c': i2c_data_low(); break;
 			case 'y':
 				// Disable write-protect temporarily
 				// (writing to EEPROM reasserts it automatically)
 				eeprom_writeenable();
 				break;
-			case 'b': case 'm': case 'n':
 			case 'g':
 				// Adjust where to read or write data in EEPROM
-				if (c=='b') eeprom_address-=0x100;
-				if (c=='m') eeprom_address+=0x100;
-				if (c=='n') eeprom_address+=0x10;
-				if (c=='g') {
-					// Allow things like 1a0!g to set EEPROM pointer to 0x1a0
-					eeprom_address=0;
-					while (BUF_NOT_EMPTY(rx)) {
-						eeprom_address=eeprom_address<<4;
-						eeprom_address+=hex_decode(serial_read());
-					}
+				// Allow things like 1a0!g to set EEPROM pointer to 0x1a0
+				eeprom_address=0;
+				while (BUF_NOT_EMPTY(rx)) {
+					eeprom_address=eeprom_address<<4;
+					eeprom_address+=hex_decode(serial_read());
 				}
 				if (eeprom_address<0) eeprom_address+=0x800;
 				if (eeprom_address>=0x800) eeprom_address-=0x800;
