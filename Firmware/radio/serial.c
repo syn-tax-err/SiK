@@ -150,8 +150,22 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			// Say nothing for twenty seconds, to give uboot and kernel
 			// time to boot.
 			uboot_silence_counter=20*100;
-			uboot_silence_mode=1;
 			uboot_counter=0;
+			uboot_silence_mode=1;
+#if 0
+			// Issue boot command just to make sure
+			serial_init(115);
+			_serial_write('\r');
+			_serial_write('b');
+			_serial_write('o');
+			_serial_write('o');
+			_serial_write('t');
+			_serial_write('\r');
+			// wait long enough for those characters to get sent
+			// 6x 115200 8N1 characters < ~1ms
+			delay_msec(2);
+			serial_init(param_get(PARAM_SERIAL_SPEED));
+#endif
 		}
 		last_byte=c;
 		
