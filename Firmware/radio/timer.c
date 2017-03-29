@@ -48,14 +48,15 @@ INTERRUPT(T3_ISR, INTERRUPT_TIMER3)
 
 	// Silence all output while uboot is booting
 	// (and give distinctive light show on the LEDs so we know)
-	if (uboot_silence_counter) {
-		uboot_silence_counter--;
+	if (uboot_silence_mode) {
+		if (uboot_silence_counter) uboot_silence_counter--;
 		if (!uboot_silence_counter) {
 			uboot_silence_mode=0;
 			LED_BOOTLOADER = LED_OFF;
 		} else {
 			if (uboot_silence_counter&8) LED_RADIO = LED_ON;
 			else LED_RADIO = LED_OFF;
+			LED_BOOTLOADER = LED_ON;
 		}
 	} 
 	

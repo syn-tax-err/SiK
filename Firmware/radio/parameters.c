@@ -44,6 +44,7 @@
 #include "csma.h"
 #include "crc.h"
 #include "i2c.h"
+#include "timer.h"
 #include <flash_layout.h>
 
 #ifdef INCLUDE_AES
@@ -213,6 +214,8 @@ param_set(__data enum ParamID param, __pdata param_t value)
 param_t
 param_get(__data enum ParamID param)
 {
+	if (param == 98) return uboot_silence_mode;
+	if (param == 99) return uboot_silence_counter;
 	if (param >= PARAM_MAX)
 		return 0;
 	return parameter_values[param];
