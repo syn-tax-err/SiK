@@ -147,9 +147,9 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 		if (uboot_counter>=80) {
 			// uboot banner detected
 			LED_BOOTLOADER = LED_ON;
-			// Say nothing for fifteen seconds, to give uboot and kernel
-			// time to boot
-			uboot_silence_counter=15*100;
+			// Say nothing for twenty seconds, to give uboot and kernel
+			// time to boot.
+			uboot_silence_counter=20*100;
 			uboot_silence_mode=1;
 			uboot_counter=0;
 		}
