@@ -406,7 +406,7 @@ void eeprom_load_parameters(void)
 {
   uint16_t a;
   
-  printf("READING EEPROM");
+//  printf("READING EEPROM");
   
   eeprom_poweron();
   
@@ -417,13 +417,13 @@ void eeprom_load_parameters(void)
   for(a=0x7c0;a<0x7F0;a+=0x10) {
     eeprom_read_page(a);
     sha3_Update(eeprom_data,0x10);
-    printf(".");
+ //   printf(".");
   }
-  printf("\r\n");
+ // printf("\r\n");
 
   // Compare with sum stored at $7F0
   if (eeprom_read_page(0x7f0)) {
-    printf("NO EEPROM\r\n");
+  //  printf("NO EEPROM\r\n");
     // No eeprom, so just use the normal saved parameters.
 
     eeprom_poweroff();    
