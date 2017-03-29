@@ -148,4 +148,8 @@ extern void serial_check_rts(void);
 void putchar_r(char c) __reentrant;
 void puts_r(char *s);
 
+/// CSMA Packet command state machine variables
+extern bool last_was_bang;
+extern bool tx_buffered_data;
+
 #endif // _SERIAL_H_

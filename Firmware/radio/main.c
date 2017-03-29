@@ -41,6 +41,7 @@
 #include "radio.h"
 #include "csma.h"
 #include "timer.h"
+#include "serial.h"
 #include "i2c.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -116,6 +117,11 @@ main(void)
 	feature_golay = param_get(PARAM_ECC)?true:false;
 	feature_rtscts = param_get(PARAM_RTSCTS)?true:false;
 
+	// Reset our serial processing state machine before any serial characters
+	// are received.
+	last_was_bang=0;
+	tx_buffered_data=0;
+	
 	// Do hardware initialisation.
 	hardware_init();
 
