@@ -30,7 +30,8 @@
 #include "radio.h"
 #include "timer.h"
 
-uint16_t no_input_ticks=0;
+uint16_t uboot_silence_counter=0;
+bool uboot_silence_mode=false;
 
 /// Counter used by delay_msec
 ///
@@ -45,6 +46,19 @@ INTERRUPT(T3_ISR, INTERRUPT_TIMER3)
 	// re-arm the interrupt by clearing TF3H
 	TMR3CN = 0x04;
 
+	// Silence all output while uboot is booting
+	// (and give distinctive light show on the LEDs so we know)
+	if (uboot_silence_counter) {
+		uboot_silence_counter--;
+		if (!uboot_silence_counter) {
+			uboot_silence_mode=0;
+			LED_BOOTLOADER = LED_OFF;
+		} else {
+			if (uboot_silence_counter&8) LED_RADIO = LED_ON;
+			else LED_RADIO = LED_OFF;
+		}
+	} 
+	
 	// call the AT parser tick
 	at_timer();
 

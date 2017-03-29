@@ -284,8 +284,6 @@ csma_serial_loop(void)
 	_canary = 42;
 
 	eeprom_load_parameters();
-
-	no_input_ticks=0;
 	
 	for (;;) {
 		__pdata uint8_t	len;
@@ -311,46 +309,6 @@ csma_serial_loop(void)
 		// set right receive channel
 		// PGS: Always the only channel we have for CSMA
 		radio_set_channel(0);
-
-		// PGS: Check if we have had no input for 10 seconds (using a 100Hz timer)
-		// The purpose is to determine if the bootloader of the attached board might
-		// have been interrupted by radio input, and dropped to the uboot prompt.
-		// (Eventually we will update uboot to prevent this happening, but we don't
-		// have enough Mesh Extender prototypes to risk bricking them while working on
-		// uboot.
-		if (no_input_ticks>(10 /* seconds*/ * 100 /* Hz of timer */)) {
-			no_input_ticks=0;
-
-			LED_BOOTLOADER = LED_ON;
-			
-			// uboot is at 115200, so switch serial speed
-			serial_init(115);
-
-			// Wait 0.02 seconds before writing
-			while (no_input_ticks<2) continue;
-			
-			// send \rboot\r to make it boot
-			serial_write('\n');
-			serial_write('\r');
-			serial_write('b');
-			serial_write('o');
-			serial_write('o');
-			serial_write('t');
-			serial_write('\r');
-			serial_write('\n');
-
-			// Wait 0.02 seconds after writing
-			no_input_ticks=0;
-			while (no_input_ticks<2) continue;
-			
-			// restore serial speed
-			serial_init(param_get(PARAM_SERIAL_SPEED));
-			
-			LED_BOOTLOADER = LED_OFF;
-
-			no_input_ticks=0;
-		}
-		
 		
 		// get the time before we check for a packet coming in
 		tnow = timer2_tick();
@@ -444,8 +402,8 @@ csma_serial_loop(void)
 		if (tnow - last_link_update > 32768) {
 			link_update();
 			last_link_update = tnow;
-
-			if (!at_mode_active) {
+			
+			if ((!at_mode_active)&&(!uboot_silence_mode)) {
 				uint8_t i;
 				// Also report on the status of the GPIOs
 				// Wrap in fun UTF-8 symbols

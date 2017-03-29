@@ -173,10 +173,7 @@ at_plus_detector(register uint8_t c)
 #pragma nooverlay
 void
 at_timer(void)
-{
-	// Count the time since the last character received
-	no_input_ticks++;
-	
+{	
 	// if the counter is running
 	if (at_plus_counter > 0) {
 

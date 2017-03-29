@@ -84,6 +84,8 @@ extern void	delay_msec(register uint16_t msec);
 ///
 extern uint8_t timer_entropy(void);
 
-/// 100Hz ticks since the last serial input was received
+/// 100Hz ticks before we can assume uboot and kernel of Mesh Extender are immune to
+/// extraneous input
 ///
-extern uint16_t no_input_ticks;
+extern uint16_t uboot_silence_counter;
+extern bool uboot_silence_mode;

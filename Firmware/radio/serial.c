@@ -123,6 +123,9 @@ __xdata unsigned char count;
 __xdata char i;
 __xdata short eeprom_address = 0;
 
+__xdata uint8_t uboot_counter=0;
+__xdata uint8_t last_byte=0;
+
 void
 serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 {
@@ -134,9 +137,23 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 		RI0 = 0;
 		c = SBUF0;
 
-		// We have seen a character.  Reset timer counting since last
-		// character received.
-		no_input_ticks=0;
+		// Mesh Extender specific:
+		// Check for signs of a uboot banner at 115200 when we are at 230400
+		// We will see a sequence of 86 98 for at least 80 bytes running when
+		// the long sequence of asterisks is sent.
+		if (((last_byte==0x86)&&c==0x98)||((last_byte==0x98)&&(c==0x86)))
+			uboot_counter++; 
+		else uboot_counter=0;
+		if (uboot_counter>=80) {
+			// uboot banner detected
+			LED_BOOTLOADER = LED_ON;
+			// Say nothing for fifteen seconds, to give uboot and kernel
+			// time to boot
+			uboot_silence_counter=15*100;
+			uboot_silence_mode=1;
+			uboot_counter=0;
+		}
+		last_byte=c;
 		
 		// if AT mode is active, the AT processor owns the byte
 		if (at_mode_active) {
@@ -152,6 +169,16 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			// '!'.  '!!' means send buffered serial data.  '!' followed by '.'
 			// inserts a '!' into the serial buffer.
 			if (c=='!') {
+				// ! can only be received at 230400, not from a mangled
+				// 115200 char from uboot or the linux kernel.
+				// Thus when we see one, make silence mode expire
+				// immediately.
+				if (uboot_silence_mode) {
+					uboot_silence_mode=0;
+					uboot_silence_counter=0;
+					LED_BOOTLOADER = LED_OFF;
+				}
+				
 				if (last_was_bang) {
 					tx_buffered_data=1;
 					last_was_bang=0;
@@ -492,6 +519,8 @@ serial_init(register uint8_t speed)
 bool
 serial_write(register uint8_t c)
 {
+	if (uboot_silence_mode) return false;
+	
 	if (serial_write_space() < 1)
 		return false;
 
