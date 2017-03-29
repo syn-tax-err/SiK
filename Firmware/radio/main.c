@@ -141,7 +141,7 @@ main(void)
 	flash_calculate_hash();
 
 	// Load radio parameters from I2C EEPROM, if present.
-	// eeprom_load_parameters();
+	eeprom_load_parameters();	
 	
 	csma_serial_loop();
 }

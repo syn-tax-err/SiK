@@ -283,8 +283,6 @@ csma_serial_loop(void)
 
 	_canary = 42;
 
-	eeprom_load_parameters();
-	
 	for (;;) {
 		__pdata uint8_t	len;
 		__pdata uint16_t tnow, tdelta;
