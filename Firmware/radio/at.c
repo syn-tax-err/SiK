@@ -38,6 +38,7 @@
 #include "flash_layout.h"
 #include "at.h"
 #include "board.h"
+#include "timer.h"
 
 // canary data for ram wrap. It is in at.c as the compiler
 // assigns addresses in alphabetial order and we want this at a low
@@ -173,6 +174,9 @@ at_plus_detector(register uint8_t c)
 void
 at_timer(void)
 {
+	// Count the time since the last character received
+	no_input_ticks++;
+	
 	// if the counter is running
 	if (at_plus_counter > 0) {
 

@@ -40,6 +40,7 @@
 #include "flash_layout.h"
 #include "serial.h"
 #include "packet.h"
+#include "timer.h"
 #include "i2c.h"
 #include "sha3.h"
 
@@ -99,7 +100,6 @@ static volatile bool			tx_idle;
 
 static void			_serial_write(register uint8_t c);
 static void			serial_restart(void);
-static void serial_device_set_speed(register uint8_t speed);
 
 // save and restore serial interrupt. We use this rather than
 // __critical to ensure we don't disturb the timer interrupt at all.
@@ -134,6 +134,10 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 		RI0 = 0;
 		c = SBUF0;
 
+		// We have seen a character.  Reset timer counting since last
+		// character received.
+		no_input_ticks=0;
+		
 		// if AT mode is active, the AT processor owns the byte
 		if (at_mode_active) {
 			// If an AT command is ready/being processed, we would ignore this byte
@@ -776,7 +780,6 @@ serial_device_valid_speed(register uint8_t speed)
 	return false;
 }
 
-static 
 void serial_device_set_speed(register uint8_t speed)
 {
 	uint8_t i;

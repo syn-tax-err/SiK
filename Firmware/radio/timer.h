@@ -83,3 +83,7 @@ extern void	delay_msec(register uint16_t msec);
 /// return some entropy from timers
 ///
 extern uint8_t timer_entropy(void);
+
+/// 100Hz ticks since the last serial input was received
+///
+extern uint16_t no_input_ticks;

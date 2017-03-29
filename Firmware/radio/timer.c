@@ -30,6 +30,8 @@
 #include "radio.h"
 #include "timer.h"
 
+uint16_t no_input_ticks=0;
+
 /// Counter used by delay_msec
 ///
 static __data volatile uint8_t delay_counter;
