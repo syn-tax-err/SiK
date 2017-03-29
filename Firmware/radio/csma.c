@@ -279,7 +279,7 @@ void
 csma_serial_loop(void)
 {
 	__pdata uint16_t last_t = timer2_tick();
-	__pdata uint16_t last_link_update = last_t;
+	__pdata uint16_t last_link_update = 0xffff;
 
 	_canary = 42;
 

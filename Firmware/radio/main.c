@@ -132,16 +132,16 @@ main(void)
 	pins_user_init();
 #endif
 
-	// Power on with uboot detection negative
-	uboot_silence_mode=0;
-	uboot_silence_counter=0;
+	// Power on with uboot detection briefly enforced
+	uboot_silence_mode=1;
+	uboot_silence_counter=1*100;
 	
 	// Calculate hashes of flash memory now, so that we can respond quickly later
 	// when requested.
 	flash_calculate_hash();
 
 	// Load radio parameters from I2C EEPROM, if present.
-	eeprom_load_parameters();	
+	eeprom_load_parameters();
 	
 	csma_serial_loop();
 }
