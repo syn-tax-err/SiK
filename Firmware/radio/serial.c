@@ -229,11 +229,20 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				while (BUF_NOT_EMPTY(rx)) {
 					BUF_REMOVE(rx,c);
 				}
-			} else if ((c>='a') &&(c<='z') && last_was_bang ) {
+			} else if (((c>='a') &&(c<='z') && last_was_bang )
+				   || ((c>='0') &&(c<='9') && last_was_bang )) {
 				last_was_bang=0;
 #if PIN_MAX > 0
 				// I2C debug functions
 		        switch (c) {
+			case '0': case '1': case '2': case '3': case '4': 
+				pins_user_set_io(c-'0',PIN_OUTPUT);
+				pins_user_set_value(c-'0',1);
+				break;
+			case '5': case '6': case '7': case '8': case '9': 
+				pins_user_set_io(c-'5',PIN_OUTPUT);
+				pins_user_set_value(c-'5',0);
+				break;				
 			case 'p': eeprom_poweron(); break;
 			case 'o': eeprom_poweroff(); break;
 			case 's': // i2c_clock_high(); break;
