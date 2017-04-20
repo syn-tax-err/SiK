@@ -247,14 +247,14 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 			case 'o': eeprom_poweroff(); break;
 			case 's': // i2c_clock_high(); break;
 				// Drive line hard (for debugging)
-				pins_user_set_io(1,PIN_OUTPUT);
-				pins_user_set_value(1,1);
+				pins_user_set_io(4,PIN_OUTPUT);
+				pins_user_set_value(4,1);
 				break;
 			case 'x': i2c_clock_low(); break;
 			case 'd': // i2c_data_high(); break;
 				// Drive line hard (for debugging)
-				pins_user_set_io(0,PIN_OUTPUT);
-				pins_user_set_value(0,1);
+				pins_user_set_io(3,PIN_OUTPUT);
+				pins_user_set_value(3,1);
 				break;
 			case 'c': i2c_data_low(); break;
 			case 'y':

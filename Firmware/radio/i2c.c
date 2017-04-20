@@ -36,38 +36,40 @@ void i2c_delay(void)
 #define i2c_delay()
 #endif
 
+// Prior to Rev4 Mesh Extender PCB, clock was IO1, now IO4
 void i2c_clock_high(void)
 {
-  pins_user_set_io(1,PIN_INPUT);
-  pins_user_set_value(1,1);
+  pins_user_set_io(4,PIN_INPUT);
+  pins_user_set_value(4,1);
 }
 
 void i2c_clock_low(void)
 {
-  pins_user_set_io(1,PIN_OUTPUT);
-  pins_user_set_value(1,0);
+  pins_user_set_io(4,PIN_OUTPUT);
+  pins_user_set_value(4,0);
 }
 
+// Prior to Rev4 Mesh Extender PCB, data was IO0, now IO3
 void i2c_data_high(void)
 {
-  pins_user_set_io(0,PIN_INPUT);
-  pins_user_set_value(0,1);
+  pins_user_set_io(3,PIN_INPUT);
+  pins_user_set_value(3,1);
 }
 
 void i2c_data_low(void)
 {
-  pins_user_set_io(0,PIN_OUTPUT);
-  pins_user_set_value(0,0);
+  pins_user_set_io(3,PIN_OUTPUT);
+  pins_user_set_value(3,0);
 }
 
 unsigned char i2c_clock_value(void)
 {
-  if (pins_user_get_adc(1)) return 1; else return 0;
+  if (pins_user_get_adc(4)) return 1; else return 0;
 }
 
 unsigned char i2c_data_value(void)
 {
-  if (pins_user_get_adc(0)) return 1; else return 0;
+  if (pins_user_get_adc(3)) return 1; else return 0;
 }
 
 
@@ -99,26 +101,26 @@ unsigned char i2c_rx(char ack)
   // Optimised reading routine for RFD900p
 
   // data = input, float high
-  SFRPAGE = CONFIG_PAGE; P3DRV   |= 0x10;
-  SFRPAGE = LEGACY_PAGE; P3MDOUT &= ~0x10;
-  P3|=0x10;
+  SFRPAGE = CONFIG_PAGE; P1DRV   |= 0x8;
+  SFRPAGE = LEGACY_PAGE; P1MDOUT &= ~0x8;
+  P1|=0x8;
   
   for(x=0;x<8;x++) {
     d <<= 1;
-    P3 |= 0x08; // clock high
-    if (P3&0x10) d|=1;
-    P3 &= ~0x08; // clock low
+    P1 |= 2; // clock high
+    if (P1&8) d|=1;
+    P1 &= 2; // clock low
   }
 
   // Send [n]ack
-  P3MDOUT|=0x10;
-  if (ack) P3&=~0x10;
-  else P3|=0x10;
+  P1MDOUT|=8;
+  if (ack) P1&=~8;
+  else P1|=8;
 
   // Finish ACK/NACK
-  P3 |= 0x08; // clock high
+  P1 |= 2; // clock high
   for(x=0;x<1;x++) continue;
-  P3 &= ~0x08; // clock low
+  P1 &= ~2; // clock low
   
 #else
   i2c_data_high();
@@ -157,26 +159,26 @@ unsigned char i2c_tx(unsigned char d)
 {
 
 #if defined board_rfd900p
-  P3 &= ~0x08; // clock low
+  P1 &= ~2; // clock low
 
   for(x=8;x;x--) {
-    if (d&0x80) P3 |= 0x10; else P3 &= ~0x10;
+    if (d&0x80) P1 |= 8; else P1 &= ~8;
     d<<=1;
-    P3 |= 0x08; // clock high
+    P1 |= 2; // clock high
     for(readerror=0;readerror<2;readerror++) continue;
-    P3 &= ~0x08; // clock low
+    P1 &= ~2; // clock low
   }
 
   // data = input, float high
-  SFRPAGE = CONFIG_PAGE; P3DRV   |= 0x10;
-  SFRPAGE = LEGACY_PAGE; P3MDOUT &= ~0x10;
-  P3|=0x10;
+  SFRPAGE = CONFIG_PAGE; P1DRV   |= 8;
+  SFRPAGE = LEGACY_PAGE; P1MDOUT &= ~8;
+  P1|=8;
 
-  P3 |= 0x08; // clock high
+  P1 |= 8; // clock high
 
-  if (P3 & 0x10) x=1; else x=0;
+  if (P1 & 8) x=1; else x=0;
 
-  P3 &= ~0x08; // clock low
+  P1 &= ~2; // clock low
   
       
 #else
@@ -350,16 +352,17 @@ void eeprom_writeenable(void)
   pins_user_set_value(5,0);
 }
 
+// Prior to Rev4 Mesh Extender PCB, poweron was IO2, now IO0
 void eeprom_poweron(void)
 {
-  pins_user_set_io(2,PIN_OUTPUT);
-  pins_user_set_value(2,1);
+  pins_user_set_io(0,PIN_OUTPUT);
+  pins_user_set_value(0,1);
 }
 
 void eeprom_poweroff(void)
 {
-  pins_user_set_io(2,PIN_OUTPUT);
-  pins_user_set_value(2,0);
+  pins_user_set_io(0,PIN_OUTPUT);
+  pins_user_set_value(0,0);
 }
 
 #else
