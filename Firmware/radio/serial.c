@@ -43,6 +43,7 @@
 #include "timer.h"
 #include "i2c.h"
 #include "sha3.h"
+#include "csma.h"
 
 // Serial rx/tx buffers.
 //
@@ -274,25 +275,8 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				if (eeprom_address>=0x800) eeprom_address-=0x800;
 				printfl("EPRADDR=$%x\r\n",eeprom_address);
 				break;
-			case 'h':
-				// Test out SHA3 code
-				{
-					char i;
-					printfl("\r\nSHA3: ");
-					sha3_Init256();
-					while (BUF_NOT_EMPTY(rx)) {
-						eeprom_data[0]=serial_read();
-						sha3_Update(eeprom_data,1);
-					}
-					sha3_Finalize();
-					for(i=0;i<32;i++)
-						if (!ctx.s[i>>3][i&7]) printfl("00");
-						else if (ctx.s[i>>3][i&7]<0x10)
-							printfl("0%x",ctx.s[i>>3][i&7]);
-						else
-							printfl("%x",ctx.s[i>>3][i&7]);
-					printfl("\r\n");					
-				}
+			case 'h': // Request heartbeat from radio
+				heartbeat_requested=1;
 				break;
 			case 'w':
 				// Write a page of data to EEPROM.

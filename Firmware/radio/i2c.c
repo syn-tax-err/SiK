@@ -13,18 +13,18 @@ __xdata unsigned char eeprom_data[16];
 
 unsigned char k;
 unsigned short delay;
-unsigned short i2c_delay_counter;
+unsigned short i2c_delay_counter=16;
 
 #if PIN_MAX>0
 
-#if 0
+#if 1
 void i2c_delay(void)
 {
   // 10 microsecond delay
   // i2c_delay_counter = param_get(PARAM_I2CDELAY);
   
   // Will this be enough?
-  //  for(delay=0;delay!=i2c_delay_counter;delay++)
+  // for(delay=0;delay!=i2c_delay_counter;delay++)
   //  for(k=0;k!=0x0f;k++)
   //  continue;
 

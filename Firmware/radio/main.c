@@ -121,6 +121,7 @@ main(void)
 	// are received.
 	last_was_bang=0;
 	tx_buffered_data=0;
+	heartbeat_requested=0;
 	
 	// Do hardware initialisation.
 	hardware_init();

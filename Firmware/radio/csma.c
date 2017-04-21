@@ -58,6 +58,8 @@
 extern bool last_was_bang;
 extern bool tx_buffered_data;
 
+__xdata uint8_t heartbeat_requested=0;
+
 /// a packet buffer for the TDM code
 __xdata uint8_t	pbuf[MAX_PACKET_LENGTH];
 /// a packet announcement buffer for the TDM code
@@ -401,46 +403,48 @@ csma_serial_loop(void)
 			link_update();
 			last_link_update = tnow;
 			
-			if ((!at_mode_active)&&(!uboot_silence_mode)) {
-				uint8_t i;
-				// Also report on the status of the GPIOs
-				// Wrap in fun UTF-8 symbols
-				// for ease of human readability, while remaining
-				// unambigious for machine decoding
-				// puts_r("📥");
-				putchar_r(0xF0);
-				putchar_r(0x9F);
-				putchar_r(0x93);
-				putchar_r(0xA5);
-
-				// Now put radio temperature in human and machine
-				// readable format.  Needs to be safe for -ve
-				// temperatures as well.
-				if (radio_temperature()<0)
-					{ putchar_r('-'); i=-radio_temperature(); }
-				else
-					{ putchar_r('+'); i=radio_temperature(); }
-				if (i>99) putchar_r('0'+i/100); else putchar_r('0');
-				i=i%100;
-				if (i>9) putchar_r('0'+i/10); else putchar_r('0');
-				i=i%10;
-				putchar_r('0'+i);
-				// puts_r("°");
-				putchar_r(0xc2); putchar_r(0xb0);
-				for(i=0;i<6;i++) {
-#if PIN_MAX > 0
-					if(pins_user_get_io(i) == PIN_INPUT)
-						putchar_r(0x30+pins_user_get_adc(i));
+			if (heartbeat_requested) {
+				heartbeat_requested=0;
+				if ((!at_mode_active)&&(!uboot_silence_mode)) {
+					uint8_t i;
+					// Also report on the status of the GPIOs
+					// Wrap in fun UTF-8 symbols
+					// for ease of human readability, while remaining
+					// unambigious for machine decoding
+					// puts_r("📥");
+					putchar_r(0xF0);
+					putchar_r(0x9F);
+					putchar_r(0x93);
+					putchar_r(0xA5);
+					
+					// Now put radio temperature in human and machine
+					// readable format.  Needs to be safe for -ve
+					// temperatures as well.
+					if (radio_temperature()<0)
+						{ putchar_r('-'); i=-radio_temperature(); }
 					else
-						if (pins_user_get_value(i))
-							putchar_r('X');
+						{ putchar_r('+'); i=radio_temperature(); }
+					if (i>99) putchar_r('0'+i/100); else putchar_r('0');
+					i=i%100;
+					if (i>9) putchar_r('0'+i/10); else putchar_r('0');
+					i=i%10;
+					putchar_r('0'+i);
+					// puts_r("°");
+					putchar_r(0xc2); putchar_r(0xb0);
+					for(i=0;i<6;i++) {
+#if PIN_MAX > 0
+						if(pins_user_get_io(i) == PIN_INPUT)
+							putchar_r(0x30+pins_user_get_adc(i));
 						else
-							putchar_r('x');
+							if (pins_user_get_value(i))
+								putchar_r('X');
+							else
+								putchar_r('x');
 #else
-					putchar_r(0xbd);
+						putchar_r(0xbd);
 #endif
+					}
 				}
-				
 				// XXX - We need to check GPIOs for regulatory domain selection
 				// Indicate board frequency
 				putchar_r('0'+(g_board_frequency>>4));

@@ -32,8 +32,8 @@
 /// Interface to the time division multiplexing code
 ///
 
-#ifndef _TDM_H_
-#define _TDM_H_
+#ifndef _CSMA_H_
+#define _CSMA_H_
 
 /// initialise csma subsystem
 ///
@@ -56,4 +56,6 @@ extern __pdata uint8_t duty_cycle;
 /// the LBT threshold
 extern __pdata uint8_t lbt_rssi;
 
-#endif // _TDM_H_
+extern __xdata uint8_t heartbeat_requested;
+
+#endif // _CSMA_H_
