@@ -97,7 +97,8 @@ unsigned char i2c_rx(char ack)
   read_error=0;
   
   // Receive bits
-#if defined BOARD_rfd900p
+// #if defined BOARD_rfd900p
+  #if 0
   // Optimised reading routine for RFD900p
 
   // data = input, float high
@@ -158,7 +159,8 @@ unsigned char i2c_rx(char ack)
 unsigned char i2c_tx(unsigned char d)
 {
 
-#if defined board_rfd900p
+#if 0
+  // #if defined board_rfd900p
   P1 &= ~2; // clock low
 
   for(x=8;x;x--) {
