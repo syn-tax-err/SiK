@@ -441,7 +441,7 @@ void eeprom_load_parameters(void)
   for(k=0;k<0x10;k++) {
     if (eeprom_data[k]!=ctx.s[k>>3][k&7]) {
       
-      printf("INVALID EEPROM DATA\r\n");
+      // printf("INVALID EEPROM DATA\r\n");
       
       // If we have no valid data, then we need to make sure we don't transmit
       // illegally.  
@@ -470,12 +470,16 @@ void eeprom_load_parameters(void)
     // Print success message, with two-character representative country
     // code. (LBARD will read a longer country/region descriptor for
     // display).
+#if 0
     printf("EEPROM VALID: %c%c, %lu Hz\r\n",
 	   eeprom_data[0xD],eeprom_data[0xE],
 	   (unsigned long)v,
 	   eeprom_data[5],eeprom_data[4],eeprom_data[3],eeprom_data[2]);
+#endif
   } else {
+#if 0
     printf("EEPROM DATA FORMAT %x unknown\r\n",eeprom_data[0xf]);
+#endif
   }
 
   eeprom_poweroff();
