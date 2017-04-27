@@ -265,11 +265,16 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				break;
 			case 'g':
 				// Adjust where to read or write data in EEPROM
-				// Allow things like 1a0!g to set EEPROM pointer to 0x1a0
+				// Allow things like 1a0!g to set EEPROM pointer to 0x1a0				
 				eeprom_address=0;
 				while (BUF_NOT_EMPTY(rx)) {
 					eeprom_address=eeprom_address<<4;
 					eeprom_address+=hex_decode(serial_read());
+				}
+				if (!eeprom_address) {
+					// 0!g ends silent mode, so that Mesh Extenders
+					// don't need to delay on power up.
+					uboot_silence_mode = 0;
 				}
 				if (eeprom_address<0) eeprom_address+=0x800;
 				if (eeprom_address>=0x800) eeprom_address-=0x800;
