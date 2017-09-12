@@ -45,6 +45,8 @@
 #include "sha3.h"
 #include "csma.h"
 
+void reinit(void);
+
 // Serial rx/tx buffers.
 //
 // Note that the rx buffer is much larger than you might expect
