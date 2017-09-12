@@ -831,8 +831,8 @@ radio_configure(__pdata uint8_t air_rate)
 	register_write(EZRADIOPRO_PREAMBLE_LENGTH, settings.preamble_length); // nibbles 
 	register_write(EZRADIOPRO_PREAMBLE_DETECTION_CONTROL, 5<<3); // 5 nibbles
 
-	// setup minimum output power during startup
-	radio_set_transmit_power(0);
+	// setup default output power during startup
+	radio_set_transmit_power(24);
 
 	// work out which register table column we will use
 	for (i = 0; i < NUM_DATA_RATES - 1; i++) {

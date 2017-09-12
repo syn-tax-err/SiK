@@ -410,7 +410,10 @@ char eeprom_write_page(unsigned short address)
 void eeprom_load_parameters(void)
 {
   uint16_t a;
-  
+
+  // XXX disable reading eeprom for now in case it is causing problems 
+  return;
+ 
 //  printf("READING EEPROM");
   
   eeprom_poweron();

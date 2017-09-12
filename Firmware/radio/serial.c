@@ -200,6 +200,12 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				} else {
 					last_was_bang=1;
 				}
+			} else if ((c=='H') && last_was_bang ) {
+				radio_set_transmit_power(24);
+			} else if ((c=='L') && last_was_bang ) {
+				radio_set_transmit_power(0);
+			} else if ((c=='P') && last_was_bang ) {
+                                printfl("TXPOWER=%d\r\n",radio_get_transmit_power());
 			} else if ((c=='B') && last_was_bang ) {
 
 				// Drop to boot loader if !Cup!B is typed
