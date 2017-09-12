@@ -94,6 +94,25 @@ bool feature_golay;
 bool feature_opportunistic_resend;
 bool feature_rtscts;
 
+void reinit(void)
+{
+  // Do hardware initialisation.
+        hardware_init();
+
+        // do radio initialisation
+        radio_init();
+
+        // turn on the receiver
+        if (!radio_receiver_on()) {
+                panic("failed to enable receiver");
+        }
+
+        // Init user pins
+#if PIN_MAX > 0
+        pins_user_init();
+#endif
+}
+
 void
 main(void)
 {

@@ -412,9 +412,18 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				// Empty packet buffer
 				last_was_bang=0;
 				rx_insert=0; rx_remove=0;
+			} else if ((c=='Y') && last_was_bang ) {
+			     last_was_bang=0;
+			        tx_buffered_data=0;
+			        heartbeat_requested=0;
+
+                                reinit();
+
+                                printfl("REINITed\r\n");
 			} else if ((c=='Z') && last_was_bang ) {
 				// Trigger a reset of radio by software (like ATZ)
 				last_was_bang=0;
+                                printfl("Resetting...\n\r");
 				RSTSRC |= (1 << 4);
 	                        for (;;)
        	                         ;
@@ -827,7 +836,8 @@ serial_device_valid_speed(register uint8_t speed)
 	return false;
 }
 
-void serial_device_set_speed(register uint8_t speed)
+void 
+serial_device_set_speed(register uint8_t speed)
 {
 	uint8_t i;
 	uint8_t num_rates = ARRAY_LENGTH(serial_rates);
