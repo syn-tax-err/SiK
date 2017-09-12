@@ -203,10 +203,13 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 					last_was_bang=1;
 				}
 			} else if ((c=='H') && last_was_bang ) {
+				last_was_bang=0;
 				radio_set_transmit_power(24);
 			} else if ((c=='L') && last_was_bang ) {
+				last_was_bang=0;
 				radio_set_transmit_power(0);
 			} else if ((c=='P') && last_was_bang ) {
+				last_was_bang=0;
                                 printfl("TXPOWER=%d\r\n",radio_get_transmit_power());
 			} else if ((c=='B') && last_was_bang ) {
 
