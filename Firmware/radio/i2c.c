@@ -445,7 +445,8 @@ void eeprom_load_parameters(void)
       
       // If we have no valid data, then we need to make sure we don't transmit
       // illegally.  
-      param_set(PARAM_TXPOWER,0);
+      // param_set(PARAM_TXPOWER,0);
+      param_set(PARAM_TXPOWER,24);
       
       eeprom_poweroff();
       return;

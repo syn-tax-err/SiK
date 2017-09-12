@@ -65,7 +65,7 @@ __code const struct parameter_info {
 	{"SERIAL_SPEED",   230},
 	{"AIR_SPEED",      128},
 	{"NETID",          0x4110},
-	{"TXPOWER",         0},
+	{"TXPOWER",         24},
 	{"ECC",             0},
 	{"OPPRESEND",       0},
 	{"FREQ",            923000},
