@@ -498,7 +498,10 @@ csma_serial_loop(void)
 			// Only send packets if we have bytes pending, and the noise level is low enough.
 			// Ideally we should use a dynamic LBT regieme instead of a fixed point like this,
 			// but it will probably be okay.
-			if (statistics.average_noise < 70)
+
+			// XXX - Disable this additional check, to cope with high noise levels around 900MHz
+			// in Port Vila for Vanuatu pilot. i.e., just use the original adjustable LBT check
+			//			if (statistics.average_noise < 70)
 				if (tx_buffered_data&&((radio_current_rssi() < lbt_rssi))) {
 					// get a packet from the serial port
 					len = packet_get_next(max_xmit, pbuf);
