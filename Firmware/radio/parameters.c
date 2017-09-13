@@ -70,7 +70,7 @@ __code const struct parameter_info {
 	{"OPPRESEND",       0},
 	{"FREQ",            923000},
 	{"DUTY_CYCLE",      0},
-	{"LBT_RSSI",        80},
+	{"LBT_RSSI",        220},
 	{"MANCHESTER",      0},
 	{"RTSCTS",          0},
 	{"I2CDELAY",        1}
