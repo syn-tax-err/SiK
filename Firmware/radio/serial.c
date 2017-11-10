@@ -125,6 +125,7 @@ uint8_t hex_decode(uint8_t c)
 __xdata unsigned char count;
 __xdata char i;
 __xdata short eeprom_address = 0;
+__xdata uint32_t txfreq = 0;
 
 __xdata uint8_t uboot_counter=0;
 __xdata uint8_t last_byte=0;
@@ -276,6 +277,16 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				// Disable write-protect temporarily
 				// (writing to EEPROM reasserts it automatically)
 				eeprom_writeenable();
+				break;
+			case 'f':
+				// Adjust where to read or write data in EEPROM
+				// Allow things like 1a0!g to set EEPROM pointer to 0x1a0				
+				txfreq=0;
+				while (BUF_NOT_EMPTY(rx)) {
+					txfreq=txfreq<<4;
+					txfreq+=hex_decode(serial_read());
+				}
+				radio_set_frequency(txfreq);
 				break;
 			case 'g':
 				// Adjust where to read or write data in EEPROM
