@@ -202,6 +202,9 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 				} else {
 					last_was_bang=1;
 				}
+			} else if ((c=='M') && last_was_bang ) {
+				last_was_bang=0;
+				radio_set_transmit_power(30);
 			} else if ((c=='H') && last_was_bang ) {
 				last_was_bang=0;
 				radio_set_transmit_power(24);
