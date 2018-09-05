@@ -238,9 +238,10 @@ char eeprom_read_page(unsigned short address)
   
 char eeprom_read_next_page(unsigned short address)
 {
+  unsigned char i;
   if (i2c_tx(0xa1+((address>>7)&0xe))) { i2c_stop(); return 6; }
-  
-  for(unsigned char i=0;i<15;i++) {
+
+  for(i=0;i<15;i++) {
     eeprom_data[i]=i2c_rx(1);
     if (read_error) {
       i2c_stop();
@@ -290,6 +291,7 @@ char eeprom_write_byte(unsigned short address, unsigned char value)
 char eeprom_write_page(unsigned short address)
 {
   uint8_t waiting=1;
+  char i;
   i2c_start();
 
   // Due to slowness, show pretty lights while writing
@@ -298,7 +300,7 @@ char eeprom_write_page(unsigned short address)
   
   if (i2c_tx(0xa0+((address>>7)&0xe))) goto fail;
   if (i2c_tx(address&0xff)) goto fail;
-  for(char i=0;i<16;i++) {
+  for(i=0;i<16;i++) {
     if (i2c_tx(eeprom_data[i])) goto fail;
     printfl(" %x",eeprom_data[i]);
 

@@ -167,19 +167,19 @@ static void keccakf(void)
 void sha3_Init256(void)
 {
     memset(&ctx, 0, sizeof(ctx));
-    ctx.capacityWords = 2 * 256 / (8 * sizeof(uint64_t));
+    ctx.capacityWords = 2 * 256 / (8 * UINT64_SIZE);
 }
 
 void sha3_Init384(void)
 {
     memset(&ctx, 0, sizeof(ctx));
-    ctx.capacityWords = 2 * 384 / (8 * sizeof(uint64_t));
+    ctx.capacityWords = 2 * 384 / (8 * UINT64_SIZE);
 }
 
 void sha3_Init512(void)
 {
     memset(&ctx, 0, sizeof(ctx));
-    ctx.capacityWords = 2 * 512 / (8 * sizeof(uint64_t));
+    ctx.capacityWords = 2 * 512 / (8 * UINT64_SIZE);
 }
 
 __xdata uint32_t old_tail;

@@ -43,13 +43,23 @@
 #define SHA3_CONST(x) x##L
 #endif
 
+/* 
+ * Some versions of SDCC (3.4.0 from CentOS7) don't support 64-bit 
+ * integer types on mcs51 - see __SDCC_LONGLONG in stdint.h
+ */
+#if defined(__SDCC_mcs51)
+#define UINT64_SIZE 8
+#else
+#define UINT64_SIZE sizeof(uint64_t)
+#endif
+
 /* The following state definition should normally be in a separate 
  * header file 
  */
 
 /* 'Words' here refers to uint64_t */
 #define SHA3_KECCAK_SPONGE_WORDS \
-        (((1600)/8/*bits to byte*/)/sizeof(uint64_t))
+        (((1600)/8/*bits to byte*/)/UINT64_SIZE)
 struct sha3_context {
     uint8_t saved[8];             /* the portion of the input message that we
                                  * didn't consume yet */
