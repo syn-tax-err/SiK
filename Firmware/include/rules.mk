@@ -72,11 +72,21 @@ PRODUCT_INSTALL	?=	$(PRODUCT_HEX)
 # Compiler and tools
 #
 ifeq ($(shell which sdcc),)
-$(error Could not find SDCC on your path - cannot build)
+	ifeq ($(shell which sdcc-sdcc),)
+		$(error Could not find SDCC on your path - cannot build)
+	else
+		# CentOS SDCC binaries are prefixed
+		SDCC = sdcc-sdcc
+		SDAS = sdcc-sdas8051
+	endif
+else
+	# Standard SDCC binaries
+	SDCC = sdcc
+	SDAS = sdas8051
 endif
-CC		 =	sdcc -mmcs51
-AS		 =	sdas8051 -jloscp
-LD		 =	sdcc
+CC		 =	$(SDCC) -mmcs51
+AS		 =	$(SDAS) -jloscp
+LD		 =	$(SDCC)
 MD5		 =	md5
 BANK_ALLOC	 =	./tools/bank-alloc.py
 INCLUDES	 =	$(SRCROOT)/include
